@@ -1,0 +1,35 @@
+# text screens
+
+VITAROOT = $(VITASDK)/arm-vita-eabi
+PREFIX = arm-vita-eabi
+
+CC = $(PREFIX)-gcc
+LD = $(PREFIX)-ld
+AR = $(PREFIX)-gcc-ar
+
+OBJS=\
+	txt_conditional.o \
+	txt_checkbox.o txt_desktop.o \
+	txt_dropdown.o txt_fileselect.o \
+	txt_gui.o txt_inputbox.o txt_io.o \
+	txt_button.o txt_label.o \
+	txt_radiobutton.o txt_scrollpane.o \
+	txt_separator.o txt_spinctrl.o \
+	txt_sdl.o txt_strut.o txt_table.o \
+	txt_utf8.o txt_widget.o txt_window.o \
+	txt_window_action.o
+
+CFLAGS =\
+-mtune=cortex-a9 -mfpu=neon -mthumb                       \
+-O2 -g                                                    \
+-fsigned-char -fno-short-enums                            \
+-Wall -Wdeclaration-after-statement -Wredundant-decls     \
+-D_REENTRANT -DHAVE_CONFIG_H                              \
+-I. -I../vita -I../src                                    \
+-I$(VITAROOT)/include/SDL2 -I$(VITAROOT)/include/libpng16
+
+libtextscreen.a: $(OBJS)
+	$(AR) -rc $@ $^
+
+clean:
+	rm -rf $(OBJS) libtextscreen.a

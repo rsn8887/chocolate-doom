@@ -1,0 +1,19 @@
+all: doom
+
+doom: textscreen/libtextscreen.a opl/libopl.a pcsound/libpcsound.a
+	$(MAKE) -C src -f Makefile.vita doom
+
+textscreen/libtextscreen.a:
+	$(MAKE) -C textscreen -f Makefile.vita
+
+opl/libopl.a:
+	$(MAKE) -C opl -f Makefile.vita
+
+pcsound/libpcsound.a:
+	$(MAKE) -C pcsound -f Makefile.vita
+
+clean:
+	$(MAKE) -C src -f Makefile.vita clean
+	$(MAKE) -C textscreen -f Makefile.vita clean
+	$(MAKE) -C opl -f Makefile.vita clean
+	$(MAKE) -C pcsound -f Makefile.vita clean

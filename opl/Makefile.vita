@@ -1,0 +1,29 @@
+# OPL emulator
+
+VITAROOT = $(VITASDK)/arm-vita-eabi
+PREFIX = arm-vita-eabi
+
+CC = $(PREFIX)-gcc
+LD = $(PREFIX)-ld
+AR = $(PREFIX)-gcc-ar
+
+OBJS =\
+	opl.o opl_linux.o \
+	opl_obsd.o opl_queue.o opl_sdl.o \
+	opl_timer.o opl_win32.o ioperm_sys.o \
+	opl3.o
+
+CFLAGS =\
+-mtune=cortex-a9 -mfpu=neon -mthumb                   \
+-O2 -g                                                \
+-fsigned-char -fno-short-enums                        \
+-Wall -Wdeclaration-after-statement -Wredundant-decls \
+-D_REENTRANT -DHAVE_CONFIG_H                          \
+-I. -I../vita -I../src                                \
+-I$(VITAROOT)/include/SDL2
+
+libopl.a: $(OBJS)
+	$(AR) -rc $@ $^
+
+clean:
+	rm -rf $(OBJS) libopl.a

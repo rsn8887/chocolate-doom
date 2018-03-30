@@ -1,0 +1,28 @@
+# PC speaker emulator
+
+VITAROOT = $(VITASDK)/arm-vita-eabi
+PREFIX = arm-vita-eabi
+
+CC = $(PREFIX)-gcc
+LD = $(PREFIX)-ld
+AR = $(PREFIX)-gcc-ar
+
+OBJS =\
+	pcsound.o pcsound_bsd.o \
+	pcsound_sdl.o pcsound_linux.o \
+	pcsound_win32.o
+
+CFLAGS =\
+-mtune=cortex-a9 -mfpu=neon -mthumb                   \
+-O2 -g                                                \
+-fsigned-char -fno-short-enums                        \
+-Wall -Wdeclaration-after-statement -Wredundant-decls \
+-D_REENTRANT -DHAVE_CONFIG_H                          \
+-I. -I../vita -I../src                                \
+-I$(VITAROOT)/include/SDL2
+
+libpcsound.a: $(OBJS)
+	$(AR) -rc $@ $^
+
+clean:
+	rm -rf $(OBJS) libpcsound.a

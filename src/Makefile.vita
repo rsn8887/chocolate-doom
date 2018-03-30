@@ -1,0 +1,178 @@
+# executables
+
+VITAROOT = $(VITASDK)/arm-vita-eabi
+PREFIX = arm-vita-eabi
+
+CC = $(PREFIX)-gcc
+LD = $(PREFIX)-ld
+AR = $(PREFIX)-gcc-ar
+
+# Common source files used by absolutely everything:
+
+COMMON_SOURCE_FILES=\
+i_main.c        \
+i_system.c      \
+m_argv.c        \
+m_misc.c        \
+../vita/hacks.c
+
+# Source files used by the game binaries (chocolate-doom, etc.)
+
+GAME_SOURCE_FILES=\
+aes_prng.c      \
+d_event.c       \
+d_iwad.c        \
+d_loop.c        \
+d_mode.c        \
+deh_str.c       \
+gusconf.c       \
+i_cdmus.c       \
+i_endoom.c      \
+i_input.c       \
+i_joystick.c    \
+i_midipipe.c    \
+i_oplmusic.c    \
+i_pcsound.c     \
+i_sdlmusic.c    \
+i_sdlsound.c    \
+i_sound.c       \
+i_timer.c       \
+i_video.c       \
+i_videohr.c     \
+midifile.c      \
+mus2mid.c       \
+m_bbox.c        \
+m_cheat.c       \
+m_config.c      \
+m_controls.c    \
+m_fixed.c       \
+net_client.c    \
+net_common.c    \
+net_dedicated.c \
+net_gui.c       \
+net_io.c        \
+net_loop.c      \
+net_packet.c    \
+net_query.c     \
+net_sdl.c       \
+net_server.c    \
+net_structrw.c  \
+sha1.c          \
+memio.c         \
+tables.c        \
+v_diskicon.c    \
+v_video.c       \
+w_checksum.c    \
+w_main.c        \
+w_wad.c         \
+w_file.c        \
+w_file_stdc.c   \
+w_file_posix.c  \
+w_file_win32.c  \
+w_merge.c       \
+z_zone.c
+
+DEHACKED_SOURCE_FILES =\
+deh_io.c      \
+deh_main.c    \
+deh_mapping.c \
+deh_text.c
+
+# Some games support dehacked patches, some don't:
+
+SOURCE_FILES = $(COMMON_SOURCE_FILES) $(GAME_SOURCE_FILES)
+SOURCE_FILES_WITH_DEH = $(SOURCE_FILES) $(DEHACKED_SOURCE_FILES)
+
+OBJS = $(SOURCE_FILES:.c=.o)
+OBJS_WITH_DEH = $(SOURCE_FILES_WITH_DEH:.c=.o)
+
+COMMON_LIBS =\
+-L../textscreen -ltextscreen \
+-L../pcsound -lpcsound       \
+-L../opl -lopl
+
+EXTERNAL_LIBS =\
+-lSDL2_net             \
+-lSDL2_mixer           \
+-lSDL2                 \
+-lvita2d               \
+-lpng                  \
+-lvorbisfile           \
+-lvorbis               \
+-logg                  \
+-lz                    \
+-lm                    \
+-lc                    \
+-lSceLibKernel_stub    \
+-lSceAppMgr_stub       \
+-lSceSysmodule_stub    \
+-lSceCtrl_stub         \
+-lSceTouch_stub        \
+-lSceNet_stub          \
+-lSceNetCtl_stub       \
+-lSceAppUtil_stub      \
+-lScePower_stub        \
+-lSceCommonDialog_stub \
+-lSceAudio_stub        \
+-lSceGxm_stub          \
+-lSceDisplay_stub      \
+-lSceNet_stub          \
+-lSceNetCtl_stub       \
+-lSceHid_stub
+
+LIBS = $(COMMON_LIBS) $(EXTERNAL_LIBS)
+
+CFLAGS =\
+-mtune=cortex-a9 -mfpu=neon -mthumb                       \
+-O2 -g                                                    \
+-Wl,-q -fsigned-char -fno-short-enums                      \
+-Wall -Wdeclaration-after-statement -Wredundant-decls     \
+-D_REENTRANT -DHAVE_CONFIG_H                              \
+-I. -I../vita -I../textscreen -I../opl -I../pcsound       \
+-I$(VITAROOT)/include/SDL2 -I$(VITAROOT)/include/libpng16
+
+# Targets for final executables
+
+doom: doom.bin
+heretic: heretic.bin
+hexen: hexen.bin
+strife: strife.bin
+
+%.bin: %.velf
+	vita-make-fself -s $< $@
+
+# Targets for ELFs
+
+doom.elf: $(OBJS_WITH_DEH) doom/libdoom.a
+	$(CC) $(CFLAGS) $^ $(LIBS) -o $@
+
+heretic.elf: $(OBJS_WITH_DEH) heretic/libheretic.a
+	$(CC) $(CFLAGS) $^ $(LIBS) -o $@
+
+hexen.elf: $(OBJS) hexen/libhexen.a
+	$(CC) $(CFLAGS) $^ $(LIBS) -o $@
+
+strife.elf: $(OBJS_WITH_DEH) strife/libstrife.a
+	$(CC) $(CFLAGS) $^ $(LIBS) -o $@
+
+%.velf: %.elf
+	cp $< $<.unstripped.elf
+	$(PREFIX)-strip -g $<
+	vita-elf-create $< $@
+
+# Make "make" aware of convenience libraries in subdirectories
+
+doom/libdoom.a:
+	$(MAKE) -C doom -f Makefile.vita
+
+heretic/libheretic.a:
+	$(MAKE) -C heretic -f Makefile.vita
+
+hexen/libhexen.a:
+	$(MAKE) -C hexen -f Makefile.vita
+
+strife/libstrife.a:
+	$(MAKE) -C strife -f Makefile.vita
+
+clean:
+	rm -rf $(OBJS_WITH_DEH) *.elf *.velf *.bin
