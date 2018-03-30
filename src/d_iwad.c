@@ -710,6 +710,8 @@ static void BuildIWADDirList(void)
 
     CheckSteamGUSPatches();
 
+#elif defined(__vita__)
+    AddIWADDir(VITA_CWD);
 #else
     AddXdgDirs();
 #endif

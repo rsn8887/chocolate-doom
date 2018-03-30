@@ -267,6 +267,9 @@ void I_Error (const char *error, ...)
     va_list argptr;
     atexit_listentry_t *entry;
     boolean exit_gui_popup;
+#ifdef __vita__
+    FILE *ferr;
+#endif
 
     if (already_quitting)
     {
@@ -280,11 +283,23 @@ void I_Error (const char *error, ...)
 
     // Message first.
     va_start(argptr, error);
+#ifdef __vita__
+    ferr = fopen(VITA_CWD "/i_error.log", "w");
+    if (ferr)
+    {
+        vfprintf(ferr, error, argptr);
+        fprintf(ferr, "\n\n");
+        va_end(argptr);
+        fflush(ferr);
+        fclose(ferr);
+    }
+#else
     //fprintf(stderr, "\nError: ");
     vfprintf(stderr, error, argptr);
     fprintf(stderr, "\n\n");
     va_end(argptr);
     fflush(stderr);
+#endif
 
     // Write a copy of the message into buffer.
     va_start(argptr, error);

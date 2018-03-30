@@ -2163,7 +2163,12 @@ float M_GetFloatVariable(char *name)
 
 static char *GetDefaultConfigDir(void)
 {
-#if !defined(_WIN32) || defined(_WIN32_WCE)
+#if defined(__vita__)
+
+    // On Vita, we just use a hardcoded path for configs.
+
+    return M_StringDuplicate(VITA_CWD);
+#elif !defined(_WIN32) || defined(_WIN32_WCE)
 
     // Configuration settings are stored in an OS-appropriate path
     // determined by SDL.  On typical Unix systems, this might be
@@ -2206,6 +2211,10 @@ void M_SetConfigDir(char *dir)
     // Make the directory if it doesn't already exist:
 
     M_MakeDirectory(configdir);
+#ifdef __vita__
+    // Also make the tmp subdir on Vita
+    M_MakeDirectory(VITA_CWD "/tmp");
+#endif
 }
 
 //

@@ -101,6 +101,8 @@
 /* Vita-specific stuff */
 #include <vitasdk.h>
 
+#define VITA_CWD "ux0:/data/chocolate"
+
 #undef mkdir
 #define mkdir(path, mode) sceIoMkdir(path, mode)
 

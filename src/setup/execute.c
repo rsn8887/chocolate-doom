@@ -66,6 +66,10 @@ static char *TempFile(char *s)
     {
         tempdir = ".";
     }
+#elif defined(__vita__)
+    // On Vita, use a tmp subdir in the main data directory
+
+    tempdir = VITA_CWD "/tmp";
 #else
     // In Unix, just use /tmp.
 

@@ -507,9 +507,13 @@ void W_Profile (void)
 	info[i][profilecount] = ch;
     }
     profilecount++;
-	
+#ifdef __vita__
+    f = fopen (VITA_CWD "/waddump.txt","w");
+    name[8] = 0;
+#else
     f = fopen ("waddump.txt","w");
     name[8] = 0;
+#endif
 
     for (i=0 ; i<numlumps ; i++)
     {

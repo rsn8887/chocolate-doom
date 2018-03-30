@@ -783,9 +783,15 @@ void H2_GameLoop(void)
 {
     if (M_CheckParm("-debugfile"))
     {
+#ifdef __vita__
+        char filename[128];
+        M_snprintf(filename, sizeof(filename), VITA_CWD "/debug%i.txt", consoleplayer);
+        debugfile = fopen(filename, "w");
+#else
         char filename[20];
         M_snprintf(filename, sizeof(filename), "debug%i.txt", consoleplayer);
         debugfile = fopen(filename, "w");
+#endif
     }
     I_SetWindowTitle(gamedescription);
     I_GraphicsCheckCommandLine();
