@@ -1,4 +1,19 @@
-all: doom
+APPNAME := ChocolateDoom
+TITLE := CHOC66666
+
+vpk: doom
+	cp -f src/doom.elf.unstripped.elf doom.elf.unstripped.elf
+	cp -f src/doom.bin vita/build/eboot.bin
+
+	vita-mksfoex -s TITLE_ID="$(TITLE)" "$(APPNAME)" param.sfo
+	cp -f param.sfo vita/build/sce_sys/param.sfo
+	
+	vita-pack-vpk -s vita/build/sce_sys/param.sfo -b vita/build/eboot.bin \
+		--add vita/build/sce_sys/icon0.png=sce_sys/icon0.png \
+		--add vita/build/sce_sys/livearea/contents/bg.png=sce_sys/livearea/contents/bg.png \
+		--add vita/build/sce_sys/livearea/contents/startup.png=sce_sys/livearea/contents/startup.png \
+		--add vita/build/sce_sys/livearea/contents/template.xml=sce_sys/livearea/contents/template.xml \
+		$(APPNAME).vpk
 
 doom: textscreen/libtextscreen.a opl/libopl.a pcsound/libpcsound.a
 	$(MAKE) -C src -f Makefile.vita doom
@@ -13,6 +28,7 @@ pcsound/libpcsound.a:
 	$(MAKE) -C pcsound -f Makefile.vita
 
 clean:
+	@rm -rf param.sfo vita/build/sce_sys/param.sfo vita/build/eboot.bin
 	$(MAKE) -C src -f Makefile.vita clean
 	$(MAKE) -C textscreen -f Makefile.vita clean
 	$(MAKE) -C opl -f Makefile.vita clean
