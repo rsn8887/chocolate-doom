@@ -1,14 +1,15 @@
 APPNAME := ChocolateDoom
 TITLE := CHOC66666
 
-vpk: doom
-	cp -f src/doom.elf.unstripped.elf doom.elf.unstripped.elf
-	cp -f src/doom.bin vita/build/eboot.bin
-
+vpk: doom heretic hexen strife launcher
 	vita-mksfoex -s TITLE_ID="$(TITLE)" "$(APPNAME)" param.sfo
 	cp -f param.sfo vita/build/sce_sys/param.sfo
 	
 	vita-pack-vpk -s vita/build/sce_sys/param.sfo -b vita/build/eboot.bin \
+		--add vita/build/doom.bin=doom.bin \
+		--add vita/build/heretic.bin=heretic.bin \
+		--add vita/build/hexen.bin=hexen.bin \
+		--add vita/build/strife.bin=strife.bin \
 		--add vita/build/sce_sys/icon0.png=sce_sys/icon0.png \
 		--add vita/build/sce_sys/livearea/contents/bg.png=sce_sys/livearea/contents/bg.png \
 		--add vita/build/sce_sys/livearea/contents/startup.png=sce_sys/livearea/contents/startup.png \
@@ -16,7 +17,29 @@ vpk: doom
 		$(APPNAME).vpk
 
 doom: textscreen/libtextscreen.a opl/libopl.a pcsound/libpcsound.a
-	$(MAKE) -C src -f Makefile.vita doom
+	$(MAKE) -C src -f Makefile.vita $@
+	cp -f src/doom.elf.unstripped.elf doom.elf.unstripped.elf
+	cp -f src/doom.bin vita/build/doom.bin
+
+heretic: textscreen/libtextscreen.a opl/libopl.a pcsound/libpcsound.a
+	$(MAKE) -C src -f Makefile.vita $@
+	cp -f src/heretic.elf.unstripped.elf heretic.elf.unstripped.elf
+	cp -f src/heretic.bin vita/build/heretic.bin
+
+hexen: textscreen/libtextscreen.a opl/libopl.a pcsound/libpcsound.a
+	$(MAKE) -C src -f Makefile.vita $@
+	cp -f src/hexen.elf.unstripped.elf hexen.elf.unstripped.elf
+	cp -f src/hexen.bin vita/build/hexen.bin
+
+strife: textscreen/libtextscreen.a opl/libopl.a pcsound/libpcsound.a
+	$(MAKE) -C src -f Makefile.vita $@
+	cp -f src/strife.elf.unstripped.elf strife.elf.unstripped.elf
+	cp -f src/strife.bin vita/build/strife.bin
+
+launcher:
+	$(MAKE) -C vita/launcher -f Makefile.vita
+	cp -f vita/launcher/launcher.elf.unstripped.elf launcher.elf.unstripped.elf
+	cp -f vita/launcher/launcher.bin vita/build/eboot.bin
 
 textscreen/libtextscreen.a:
 	$(MAKE) -C textscreen -f Makefile.vita
@@ -29,7 +52,9 @@ pcsound/libpcsound.a:
 
 clean:
 	@rm -rf param.sfo vita/build/sce_sys/param.sfo vita/build/eboot.bin
+	@rm -rf vita/build/doom.bin vita/build/heretic.bin vita/build/hexen.bin vita/build/strife.bin
 	$(MAKE) -C src -f Makefile.vita clean
 	$(MAKE) -C textscreen -f Makefile.vita clean
 	$(MAKE) -C opl -f Makefile.vita clean
 	$(MAKE) -C pcsound -f Makefile.vita clean
+	$(MAKE) -C vita/launcher -f Makefile.vita clean

@@ -1,0 +1,45 @@
+# Strife
+
+VITAROOT = $(VITASDK)/arm-vita-eabi
+PREFIX = arm-vita-eabi
+
+CC = $(PREFIX)-gcc
+LD = $(PREFIX)-ld
+AR = $(PREFIX)-gcc-ar
+
+OBJS =\
+	am_map.o deh_ammo.o \
+	deh_cheat.o deh_strife.o deh_frame.o \
+	deh_misc.o deh_ptr.o deh_sound.o \
+	deh_thing.o deh_weapon.o d_items.o \
+	d_main.o d_net.o doomdef.o \
+	doomstat.o dstrings.o f_finale.o \
+	f_wipe.o g_game.o hu_lib.o \
+	hu_stuff.o info.o m_menu.o \
+	m_random.o m_saves.o p_ceilng.o \
+	p_dialog.o p_doors.o p_enemy.o \
+	p_floor.o p_inter.o p_lights.o \
+	p_map.o p_maputl.o p_mobj.o \
+	p_plats.o p_pspr.o p_saveg.o \
+	p_setup.o p_sight.o p_spec.o \
+	p_switch.o p_telept.o p_tick.o \
+	p_user.o r_bsp.o r_data.o \
+	r_draw.o r_main.o r_plane.o \
+	r_segs.o r_sky.o r_things.o \
+	s_sound.o sounds.o st_lib.o \
+	st_stuff.o wi_stuff.o
+
+CFLAGS =\
+-mtune=cortex-a9 -mfpu=neon -mthumb                       \
+-O2 -g                                                    \
+-fsigned-char -fno-short-enums                            \
+-Wall -Wdeclaration-after-statement -Wredundant-decls     \
+-D_REENTRANT -DHAVE_CONFIG_H                              \
+-I. -I.. -I../../vita -I../../textscreen                  \
+-I$(VITAROOT)/include/SDL2 -I$(VITAROOT)/include/libpng16
+
+libstrife.a: $(OBJS)
+	$(AR) -rc $@ $^
+
+clean:
+	rm -rf $(OBJS) libstrife.a

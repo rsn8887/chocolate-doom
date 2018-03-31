@@ -1,0 +1,41 @@
+# Hexen
+
+VITAROOT = $(VITASDK)/arm-vita-eabi
+PREFIX = arm-vita-eabi
+
+CC = $(PREFIX)-gcc
+LD = $(PREFIX)-ld
+AR = $(PREFIX)-gcc-ar
+
+OBJS =\
+	a_action.o am_map.o \
+	ct_chat.o d_net.o f_finale.o \
+	g_game.o h2_main.o info.o \
+	in_lude.o m_random.o mn_menu.o \
+	p_acs.o p_anim.o p_ceilng.o \
+	p_doors.o p_enemy.o p_floor.o \
+	p_inter.o p_lights.o p_map.o \
+	p_maputl.o p_mobj.o po_man.o \
+	p_plats.o p_pspr.o p_setup.o \
+	p_sight.o p_spec.o p_switch.o \
+	p_telept.o p_things.o p_tick.o \
+	p_user.o r_bsp.o r_data.o \
+	r_draw.o r_main.o r_plane.o \
+	r_segs.o r_things.o s_sound.o \
+	sb_bar.o sc_man.o sn_sonix.o \
+	sounds.o st_start.o sv_save.o
+
+CFLAGS =\
+-mtune=cortex-a9 -mfpu=neon -mthumb                       \
+-O2 -g                                                    \
+-fsigned-char -fno-short-enums                            \
+-Wall -Wdeclaration-after-statement -Wredundant-decls     \
+-D_REENTRANT -DHAVE_CONFIG_H                              \
+-I. -I.. -I../../vita                                     \
+-I$(VITAROOT)/include/SDL2 -I$(VITAROOT)/include/libpng16
+
+libhexen.a: $(OBJS)
+	$(AR) -rc $@ $^
+
+clean:
+	rm -rf $(OBJS) libhexen.a

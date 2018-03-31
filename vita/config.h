@@ -102,22 +102,12 @@
 #include <vitasdk.h>
 
 #define VITA_BASEDIR "ux0:/data/chocolate"
-
-#if VITA_GAME == doom
-  #define VITA_CWD VITA_BASEDIR "/doom"
-#elif VITA_GAME == heretic
-  #define VITA_CWD VITA_BASEDIR "/heretic"
-#elif VITA_GAME == hexen
-  #define VITA_CWD VITA_BASEDIR "/hexen"
-#elif VITA_GAME == strife
-  #define VITA_CWD VITA_BASEDIR "/strife"
-#else
-  #define VITA_CWD VITA_BASEDIR "/FIXME"
-#endif
-
+#define VITA_CWD VITA_BASEDIR
 #define VITA_TMPDIR VITA_BASEDIR "/tmp"
 
 #undef mkdir
 #define mkdir(path, mode) sceIoMkdir(path, mode)
+
+void vita_init(void);
 
 #endif
