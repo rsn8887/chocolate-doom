@@ -36,6 +36,15 @@ void D_DoomMain (void);
 
 int main(int argc, char **argv)
 {
+#ifdef __vita__
+    sceAppUtilInit(&(SceAppUtilInitParam){}, &(SceAppUtilBootParam){});
+    sceCommonDialogSetConfigParam(&(SceCommonDialogConfigParam){});
+    scePowerSetArmClockFrequency(444);
+    scePowerSetBusClockFrequency(222);
+    scePowerSetGpuClockFrequency(222);
+    scePowerSetGpuXbarClockFrequency(166);
+    sceSysmoduleLoadModule(SCE_SYSMODULE_NET);
+#endif
     // save arguments
 
     myargc = argc;
