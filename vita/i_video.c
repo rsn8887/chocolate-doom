@@ -640,7 +640,7 @@ static void CalculateTargetRect(void)
 
     if (integer_scaling)
     {
-        scale = (VITA_SCR_H / actualheight) * actualheight;
+        scale = VITA_SCR_H / actualheight;
         target_rect.w = SCREENWIDTH * scale;
         target_rect.h = actualheight * scale;
         target_rect.y = VITA_SCR_H / 2 - target_rect.h / 2;
