@@ -143,15 +143,19 @@ strife: strife.bin
 
 # Targets for ELFs
 
+doom.elf: CFLAGS += -DVITA_GAME=doom
 doom.elf: $(OBJS_WITH_DEH) doom/libdoom.a
 	$(CC) $(CFLAGS) $^ $(LIBS) -o $@
 
+heretic.elf: CFLAGS += -DVITA_GAME=heretic
 heretic.elf: $(OBJS_WITH_DEH) heretic/libheretic.a
 	$(CC) $(CFLAGS) $^ $(LIBS) -o $@
 
+hexen.elf: CFLAGS += -DVITA_GAME=hexen
 hexen.elf: $(OBJS) hexen/libhexen.a
 	$(CC) $(CFLAGS) $^ $(LIBS) -o $@
 
+strife.elf: CFLAGS += -DVITA_GAME=strife
 strife.elf: $(OBJS_WITH_DEH) strife/libstrife.a
 	$(CC) $(CFLAGS) $^ $(LIBS) -o $@
 

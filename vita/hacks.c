@@ -28,6 +28,23 @@
 
 unsigned int _newlib_heap_size_user = 128 * 1024 * 1024;
 
+// vita-related initialization stuff
+// by the time this is executed myargc and myargv have already been set
+
+void vita_init(void)
+{
+    sceAppUtilInit(&(SceAppUtilInitParam){}, &(SceAppUtilBootParam){});
+    sceCommonDialogSetConfigParam(&(SceCommonDialogConfigParam){});
+    scePowerSetArmClockFrequency(444);
+    scePowerSetBusClockFrequency(222);
+    scePowerSetGpuClockFrequency(222);
+    scePowerSetGpuXbarClockFrequency(166);
+    sceSysmoduleLoadModule(SCE_SYSMODULE_NET);
+
+    mkdir(VITA_BASEDIR, 0755);
+    mkdir(VITA_TMPDIR, 0755);
+}
+
 // SDL2_net looks for these and uses them as rand() and srand()
 // for some reason, and we don't have them in libc
 

@@ -2211,10 +2211,6 @@ void M_SetConfigDir(char *dir)
     // Make the directory if it doesn't already exist:
 
     M_MakeDirectory(configdir);
-#ifdef __vita__
-    // Also make the tmp subdir on Vita
-    M_MakeDirectory(VITA_CWD "/tmp");
-#endif
 }
 
 //

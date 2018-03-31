@@ -251,7 +251,7 @@ char *M_TempFile(const char *s)
 #elif defined(__vita__)
     // On Vita, use a tmp subdir in the main data directory
 
-    tempdir = VITA_CWD "/tmp";
+    tempdir = VITA_TMPDIR;
 #else
     // In Unix, just use /tmp.
 
