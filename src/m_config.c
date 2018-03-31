@@ -2167,7 +2167,7 @@ static char *GetDefaultConfigDir(void)
 
     // On Vita, we just use a hardcoded path for configs.
 
-    return M_StringDuplicate(VITA_CWD);
+    return M_StringDuplicate(VITA_CWD "/");
 #elif !defined(_WIN32) || defined(_WIN32_WCE)
 
     // Configuration settings are stored in an OS-appropriate path
