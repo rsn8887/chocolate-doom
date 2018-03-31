@@ -46,7 +46,8 @@ void srandom(unsigned int seed)
 char *inet_ntoa(struct in_addr in)
 {
   static char buf[32];
-  int ip = ntohl(in.s_addr);
+  int ip;
+  ip = ntohl(in.s_addr);
   snprintf(buf, sizeof(buf), "%d.%d.%d.%d",
            (ip >> 24) & 0xff, (ip >> 16) & 0xff, (ip >> 8) & 0xff, ip & 0xff);
   return buf;
@@ -54,8 +55,9 @@ char *inet_ntoa(struct in_addr in)
 
 in_addr_t inet_addr(const char *cp)
 {
-  int32_t b1, b2, b3, b4;
-  int res = sscanf(cp, "%d.%d.%d.%d", &b1, &b2, &b3, &b4);
+  int b1, b2, b3, b4;
+  int res;
+  res = sscanf(cp, "%d.%d.%d.%d", &b1, &b2, &b3, &b4);
   if (res != 4) return (in_addr_t)(-1); // is actually expected behavior
   return htonl((b1 << 24) | (b2 << 16) | (b3 << 8) | b4);
 }
@@ -65,17 +67,21 @@ struct hostent *gethostbyaddr(const void *addr,
 {
   static struct hostent ent;
   static char sname[256];
-  static struct SceNetInAddr saddr = { 0 };
-  static char *addrlist[2] = { (char *)&saddr, NULL };
+  static struct SceNetInAddr saddr;
+  static char *addrlist[2];
+  int rid, e;
+
+  addrlist[0] = (char *)&saddr;
+  addrlist[1] = NULL;
 
   if (type != AF_INET || len != sizeof(uint32_t)) return NULL;
 
-  int rid = sceNetResolverCreate("d_resolv", NULL, 0);
+  rid = sceNetResolverCreate("d_resolv", NULL, 0);
   if (rid < 0) return NULL;
 
   memcpy(&saddr.s_addr, addr, sizeof(uint32_t));
 
-  int e = sceNetResolverStartAton(rid, &saddr, sname, sizeof(sname), 0, 0, 0);
+  e = sceNetResolverStartAton(rid, &saddr, sname, sizeof(sname), 0, 0, 0);
   sceNetResolverDestroy(rid);
   if (e < 0) return NULL;
 

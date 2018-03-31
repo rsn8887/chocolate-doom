@@ -21,15 +21,6 @@
 #include "SDL.h"
 #include "SDL_opengl.h"
 
-#ifdef _WIN32
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#include <windows.h>
-#endif
-
-#include "icon.c"
-
 #include "config.h"
 #include "d_loop.h"
 #include "deh_str.h"
@@ -64,14 +55,11 @@ static char *window_title = "";
 // These are (1) the 320x200x8 paletted buffer that we draw to (i.e. the one
 // that holds I_VideoBuffer), (2) the 320x200x32 RGBA intermediate buffer that
 // we blit the former buffer to, (3) the intermediate 320x200 texture that we
-// load the RGBA buffer to and that we render into another texture (4) which
-// is upscaled by an integer factor UPSCALE using "nearest" scaling and which
-// in turn is finally rendered to screen using "linear" scaling.
+// load the RGBA buffer to and that we render onto the screen.
 
 static SDL_Surface *screenbuffer = NULL;
 static SDL_Surface *argbbuffer = NULL;
 static SDL_Texture *texture = NULL;
-static SDL_Texture *texture_upscaled = NULL;
 
 static SDL_Rect blit_rect = {
     0,
@@ -210,47 +198,6 @@ int usegamma = 0;
 // Joystick/gamepad hysteresis
 unsigned int joywait = 0;
 
-static boolean MouseShouldBeGrabbed()
-{
-    // never grab the mouse when in screensaver mode
-   
-    if (screensaver_mode)
-        return false;
-
-    // if the window doesn't have focus, never grab it
-
-    if (!window_focused)
-        return false;
-
-    // always grab the mouse when full screen (dont want to 
-    // see the mouse pointer)
-
-    if (fullscreen)
-        return true;
-
-    // Don't grab the mouse if mouse input is disabled
-
-    if (!usemouse || nomouse)
-        return false;
-
-    // if we specify not to grab the mouse, never grab
-
-    if (nograbmouse_override || !grabmouse)
-        return false;
-
-    // Invoke the grabmouse callback function to determine whether
-    // the mouse should be grabbed
-
-    if (grabmouse_callback != NULL)
-    {
-        return grabmouse_callback();
-    }
-    else
-    {
-        return true;
-    }
-}
-
 void I_SetGrabMouseCallback(grabmouse_callback_t func)
 {
     grabmouse_callback = func;
@@ -361,12 +308,6 @@ static void HandleWindowEvent(SDL_WindowEvent *event)
     }
 }
 
-static void I_ToggleFullScreen(void)
-{
-    // Can't switch it off on Vita.
-    fullscreen = true;
-}
-
 void I_GetEvent(void)
 {
     extern void I_HandleKeyboardEvent(SDL_Event *sdlevent);
@@ -458,7 +399,6 @@ static inline void BlitBuffer(void)
 {
   SDL_Color c;
   uint8_t *src, *dst, *end;
-  int h;
 
   src = screenbuffer->pixels;
   dst = argbbuffer->pixels;
@@ -663,8 +603,6 @@ void I_GetWindowPosition(int *x, int *y, int w, int h)
 
 void I_GraphicsCheckCommandLine(void)
 {
-    int i;
-
     //!
     // @category video
     // @vanilla
@@ -698,26 +636,11 @@ void I_CheckIsScreensaver(void)
     screensaver_mode = false;
 }
 
-static void SetSDLVideoDriver(void)
-{
-    // Allow a default value for the SDL video driver to be specified
-    // in the configuration file.
-
-    if (strcmp(video_driver, "") != 0)
-    {
-        char *env_string;
-
-        env_string = M_StringJoin("SDL_VIDEODRIVER=", video_driver, NULL);
-        putenv(env_string);
-        free(env_string);
-    }
-}
-
 static void SetVideoMode(void)
 {
     int w, h;
     int x, y;
-    unsigned int rmask, gmask, bmask, amask;
+    Uint32 rmask, gmask, bmask, amask;
     int unused_bpp;
     int window_flags = 0, renderer_flags = 0;
     SDL_DisplayMode mode;
