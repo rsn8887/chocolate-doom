@@ -769,6 +769,11 @@ void M_SaveSelect(int choice)
     //saveSlot = choice;
 
     M_StringCopy(saveOldString, savegamestrings[choice], sizeof(saveOldString));
+#ifdef __vita__
+    if (saveOldString[0] == 0 || !strcmp(saveOldString, EMPTYSTRING))
+        M_snprintf(savegamestrings[choice], SAVESTRINGSIZE - 1,
+                   "PLAYER%i", itemOn + 1);
+#endif
     if (!strcmp(savegamestrings[choice],EMPTYSTRING))
         savegamestrings[choice][0] = 0;
     saveCharIndex = strlen(savegamestrings[choice]);

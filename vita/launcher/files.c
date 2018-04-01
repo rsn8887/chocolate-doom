@@ -19,7 +19,7 @@ struct Game fs_games[GAME_COUNT] =
     { "Heretic (Shareware)", "heretic", "heretic1.wad" },
     { "Heretic", "heretic", "heretic.wad" },
     { "Hexen", "hexen", "hexen.wad" },
-    { "Strife", "strife", "strife.wad" },
+    { "Strife", "strife", "strife1.wad" },
 };
 
 struct FileList fs_pwads[GAME_COUNT];
