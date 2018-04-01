@@ -663,8 +663,9 @@ void M_SaveSelect(int choice)
     if (!strcmp(savegamestrings[choice], EMPTYSTRING))
     {
         savegamestrings[choice][0] = 0;
-
+#ifndef __vita__
         if (joypadSave)
+#endif
         {
             SetDefaultSaveName(choice);
         }

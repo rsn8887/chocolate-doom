@@ -312,10 +312,127 @@ static void HandleWindowEvent(SDL_WindowEvent *event)
     }
 }
 
+extern void I_HandleKeyboardEvent(SDL_Event *sdlevent);
+extern void I_HandleMouseEvent(SDL_Event *sdlevent);
+
+// No built-in touch support, so we translate mouse events to CTRL keypresses
+// as actual mouse control is not really needed, since we got analogs and dpad
+
+static void TranslateTouchEvent(SDL_Event *ev)
+{
+    SDL_Event ev_new;
+
+    memset(&ev_new, 0, sizeof(SDL_Event));
+
+    if (ev->tfinger.touchId == 0)
+    {
+        // front touch
+        ev_new.key.keysym.sym = SDLK_TAB;
+        ev_new.key.keysym.scancode = SDL_SCANCODE_TAB;
+    }
+    else
+    {
+        // back touch
+        ev_new.key.keysym.sym = SDLK_PAGEUP;
+        ev_new.key.keysym.scancode = SDL_SCANCODE_PAGEUP;
+    }
+
+    if (ev->type == SDL_FINGERDOWN)
+    {
+        ev_new.type = ev_new.key.type = SDL_KEYDOWN;
+        ev_new.key.state = SDL_PRESSED;
+    }
+    else if (ev->type == SDL_FINGERUP)
+    {
+        ev_new.type = ev_new.key.type = SDL_KEYUP;
+        ev_new.key.state = SDL_RELEASED;
+    }
+
+    I_HandleKeyboardEvent(&ev_new);
+}
+
+// A lot of actions can't be bound to joystick buttons in Chocolate, and in
+// Heretic or Hexen joystick doesn't control the menus, so we have to translate
+// joystick events to keys instead.
+
+// HACK: I'm too fucking stupid to write a proper makefile that will recompile
+//       this with -DHERETIC -DHEXEN or something, so we do this shit instead
+extern boolean MenuActive __attribute__((weak));
+extern boolean askforquit __attribute__((weak));
+extern int messageToPrint __attribute__((weak));
+
+static void TranslateControllerEvent(SDL_Event *ev)
+{
+    int btn;
+    SDL_Event ev_new;
+    boolean in_prompt;
+    static const struct 
+    {
+        SDL_Keycode sym;
+        SDL_Scancode scan;
+    } v_keymap[] = 
+    {
+        { SDLK_LALT, SDL_SCANCODE_LALT },           // Triangle
+        { SDLK_BACKSPACE, SDL_SCANCODE_BACKSPACE }, // Circle
+        { SDLK_RETURN, SDL_SCANCODE_RETURN },       // Cross
+        { SDLK_SPACE, SDL_SCANCODE_SPACE },         // Square
+        { SDLK_LSHIFT, SDL_SCANCODE_LSHIFT },       // L Trigger
+        { SDLK_LCTRL, SDL_SCANCODE_LCTRL },         // R Trigger
+        { SDLK_DOWN, SDL_SCANCODE_DOWN },           // D-Down
+        { SDLK_LEFT, SDL_SCANCODE_LEFT },           // D-Left
+        { SDLK_UP, SDL_SCANCODE_UP },               // D-Up
+        { SDLK_RIGHT, SDL_SCANCODE_RIGHT },         // D-Right
+        { SDLK_DELETE, SDL_SCANCODE_DELETE },       // Select
+        { SDLK_ESCAPE, SDL_SCANCODE_ESCAPE },       // Start
+    };
+    
+    memset(&ev_new, 0, sizeof(SDL_Event));
+
+    btn = ev->jbutton.button;
+    in_prompt = (&askforquit && askforquit) ||
+        (&messageToPrint && messageToPrint);
+
+    if (in_prompt)
+    {
+        if (btn == 1 || btn == 10)
+        {
+            ev_new.key.keysym.sym = SDLK_n;
+            ev_new.key.keysym.scancode = SDL_SCANCODE_N;
+        }
+        else if (btn == 2 || btn == 11)
+        {
+            ev_new.key.keysym.sym = SDLK_y;
+            ev_new.key.keysym.scancode = SDL_SCANCODE_Y;
+        }
+        else
+        {
+            return;
+        }
+    }
+    else
+    {
+        if (btn < 0 || btn > 11)
+            return;
+        ev_new.key.keysym.sym = v_keymap[btn].sym;
+        ev_new.key.keysym.scancode = v_keymap[btn].scan;
+    }
+
+    if (ev->type == SDL_JOYBUTTONDOWN)
+    {
+        ev_new.type = ev_new.key.type = SDL_KEYDOWN;
+        ev_new.key.state = SDL_PRESSED;
+    }
+    else if (ev->type == SDL_JOYBUTTONUP)
+    {
+        ev_new.type = ev_new.key.type = SDL_KEYUP;
+        ev_new.key.state = SDL_RELEASED;
+    }
+
+    I_HandleKeyboardEvent(&ev_new);
+}
+
 void I_GetEvent(void)
 {
-    extern void I_HandleKeyboardEvent(SDL_Event *sdlevent);
-    extern void I_HandleMouseEvent(SDL_Event *sdlevent);
     SDL_Event sdlevent;
 
     SDL_PumpEvents();
@@ -325,8 +442,6 @@ void I_GetEvent(void)
         switch (sdlevent.type)
         {
             case SDL_KEYDOWN:
-                // deliberate fall-though
-
             case SDL_KEYUP:
                 I_HandleKeyboardEvent(&sdlevent);
                 break;
@@ -334,10 +449,23 @@ void I_GetEvent(void)
             case SDL_MOUSEBUTTONDOWN:
             case SDL_MOUSEBUTTONUP:
             case SDL_MOUSEWHEEL:
-                if (usemouse && !nomouse && window_focused)
+                if (usemouse && !nomouse)
                 {
                     I_HandleMouseEvent(&sdlevent);
                 }
+                break;
+
+            // Translate Vita front screen touches into keypresses
+            case SDL_FINGERDOWN:
+            case SDL_FINGERUP:
+                TranslateTouchEvent(&sdlevent);
+                break;
+
+            // Translate some gamepad events to keys to allow menu navigation
+            // in games that don't support joystick menu controls (Heretic, Hexen)
+            case SDL_JOYBUTTONDOWN:
+            case SDL_JOYBUTTONUP:
+                TranslateControllerEvent(&sdlevent);
                 break;
 
             case SDL_QUIT:
@@ -886,7 +1014,6 @@ void I_BindVideoVariables(void)
     M_BindIntVariable("grabmouse",                 &grabmouse);
     M_BindStringVariable("video_driver",           &video_driver);
     M_BindStringVariable("window_position",        &window_position);
-    M_BindStringVariable("scaling_filter",         &scaling_filter);
     M_BindIntVariable("usegamma",                  &usegamma);
     M_BindIntVariable("png_screenshots",           &png_screenshots);
 }
