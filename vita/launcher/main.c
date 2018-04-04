@@ -4,6 +4,7 @@
 #include "screen.h"
 #include "ui.h"
 #include "files.h"
+#include "configs.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -13,10 +14,13 @@ static int init_level = 0;
 
 void I_Cleanup(void)
 {
+    if (init_level >= 5)
+      CFG_SaveAll();
     R_Free();
     IN_Free();
     UI_Free();
     FS_Free();
+    CFG_FreeAll();
 }
 
 void I_Error(const char *error, ...)
@@ -59,6 +63,8 @@ int main(void)
     init_level++;
     if (IN_Init()) I_Error("IN_Init(): failed");
     init_level++;
+    if (CFG_LoadAll() > 6) I_Error("CFG_LoadAll(): failed");
+    init_level++;
     if (UI_Init()) I_Error("UI_Init(): failed");
     init_level++;
 
@@ -67,11 +73,7 @@ int main(void)
     {
         IN_Update();
         finish = UI_Update();
-
-        R_BeginDrawing();
-        R_Clear(C_BLACK);
-        UI_Draw();
-        R_EndDrawing();
+        UI_Redraw();
     }
     while (!finish);
 

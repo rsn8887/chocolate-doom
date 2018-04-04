@@ -46,3 +46,4 @@ void R_PrintScaled(int flags, int x, int y, float s, unsigned c, const char *fmt
 void R_DrawButton(int x, int y, unsigned c, int button);
 void R_DrawRect(int x, int y, int w, int h, unsigned c);
 void R_DrawFrame(int x1, int y1, int x2, int y2, int w, unsigned c);
+void R_DrawLine(int x1, int y1, int x2, int y2, unsigned c);

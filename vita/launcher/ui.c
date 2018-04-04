@@ -2,23 +2,319 @@
 #include "utils.h"
 #include "input.h"
 #include "screen.h"
+#include "files.h"
+#include "configs.h"
 #include "ui.h"
 
+#include <stdio.h>
+#include <string.h>
+
 extern struct Menu ui_menu_main;
+extern struct Menu ui_menu_video;
+extern struct Menu ui_menu_audio;
+extern struct Menu ui_menu_input;
 extern struct Menu ui_menu_pwads;
 
 static struct Menu *ui_menus[MENU_COUNT] =
 {
     &ui_menu_main,
+    &ui_menu_video,
+    &ui_menu_audio,
+    &ui_menu_input,
     &ui_menu_pwads,
+//  &ui_menu_net,
 };
 
+static int ui_tab_x[MENU_COUNT];
+static int ui_tab_w = 0;
+
 int ui_current_menu = MENU_MAIN;
+int ui_game = -1;
+
+// options stuff
+
+static void OptScroll(struct Option *opt, int dir)
+{
+    switch (opt->type)
+    {
+        case OPT_BOOLEAN:
+            opt->boolean = !opt->boolean;
+            break;
+
+        case OPT_CHOICE:
+            opt->choice.val += dir;
+            if (opt->choice.val < 0) opt->choice.val = opt->choice.count - 1;
+            else if (opt->choice.val >= opt->choice.count) opt->choice.val = 0;
+            break;
+
+        case OPT_INTEGER:
+            opt->inum.val += opt->inum.step * dir;
+            if (opt->inum.val < opt->inum.min) opt->inum.val = opt->inum.min;
+            else if (opt->inum.val > opt->inum.max) opt->inum.val = opt->inum.max;
+            break;
+
+        case OPT_DOUBLE:
+            opt->dnum.val += opt->dnum.step * dir;
+            if (opt->dnum.val < opt->dnum.min) opt->dnum.val = opt->dnum.min;
+            else if (opt->dnum.val > opt->dnum.max) opt->dnum.val = opt->dnum.max;
+            break;
+
+        default:
+            break;
+    }
+}
+
+static void OptActivate(struct Option *opt)
+{
+    if (opt->type == OPT_BUTTON)
+    {
+        opt->button = -2;
+        UI_Redraw();
+        opt->button = IN_GetFirstButton();
+    }
+    else if (opt->type == OPT_STRING)
+    {
+        // TODO
+    }
+    else
+    {
+        OptScroll(opt, 1);
+    }
+}
+
+static void OptsUpdate(struct Menu *menu)
+{
+    struct Option *opts = menu->opts;
+    int numopts = menu->numopts;
+
+    if (IN_ButtonPressed(B_DDOWN))
+    {
+        menu->sel += 1;
+        if (menu->sel >= numopts) menu->sel = 0;
+    }
+    else if (IN_ButtonPressed(B_DUP))
+    {
+        menu->sel -= 1;
+        if (menu->sel < 0) menu->sel = numopts - 1;
+    }
+
+    if (IN_ButtonPressed(B_CROSS))
+        OptActivate(opts + menu->sel);
+    else if (IN_ButtonPressed(B_DLEFT))
+        OptScroll(opts + menu->sel, -1);
+    else if (IN_ButtonPressed(B_DRIGHT))
+        OptScroll(opts + menu->sel, 1);
+}
+
+static void OptDraw(struct Option *opt, int x, int y, int sel)
+{
+    unsigned c = sel ? C_GREEN : C_WHITE;
+    const char *tmp;
+
+    R_Print(0, x, y, c, opt->name);
+
+    x += 640;
+    switch (opt->type)
+    {
+        case OPT_BOOLEAN:
+            tmp = opt->boolean ? "ON" : "OFF";
+            R_Print(P_ARIGHT, x, y, c, tmp);
+            break;
+
+        case OPT_CHOICE:
+            R_Print(P_ARIGHT, x, y, c, opt->choice.names[opt->choice.val]);
+            break;
+
+        case OPT_INTEGER:
+            R_Print(P_ARIGHT, x, y, c, "%d", opt->inum.val);
+            break;
+
+        case OPT_DOUBLE:
+            R_Print(P_ARIGHT, x, y, c, "%g", opt->dnum.val);
+            break;
+
+        case OPT_STRING:
+            R_Print(P_ARIGHT, x, y, c, "%s", opt->string);
+            break;
+
+        case OPT_BUTTON:
+            if (opt->button == -1)
+                R_Print(P_ARIGHT, x, y, c, "UNBOUND");
+            else if (opt->button == -2)
+                R_Print(P_ARIGHT, x, y, c, "PRESS A BUTTON...");
+            else
+                R_DrawButton(x - 21, y, c, opt->button);
+            break;
+
+        default:
+            break;
+    }
+}
+
+static void OptsDraw(struct Menu *menu)
+{
+    struct Option *opts = menu->opts;
+    int numopts = menu->numopts;
+    int sel = menu->sel;
+
+    int y = 160;
+    for (int i = 0; i < numopts; ++i)
+    {
+        OptDraw(opts + i, 160, y, i == sel);
+        y += 24;
+    }
+}
+
+static void OptLoadVar(struct Option *opt)
+{
+    int vtype;
+    int itmp;
+    double dtmp;
+    char *stmp;
+    char buf[100];
+
+    switch (opt->type)
+    {
+        case OPT_BOOLEAN:
+            CFG_ReadVar(ui_game, opt->cfgvar, &opt->boolean);
+            break;
+
+        case OPT_CHOICE:
+            vtype = CFG_VarType(ui_game, opt->cfgvar);
+            if (vtype == CVAR_INTEGER)
+            {
+                CFG_ReadVar(ui_game, opt->cfgvar, &itmp);
+                snprintf(buf, sizeof(buf), "%d", itmp);
+            }
+            else if (vtype == CVAR_DOUBLE)
+            {
+                CFG_ReadVar(ui_game, opt->cfgvar, &dtmp);
+                snprintf(buf, sizeof(buf), "%f", (float)dtmp);
+            }
+            else if (vtype == CVAR_STRING)
+            {
+                CFG_ReadVar(ui_game, opt->cfgvar, buf);
+            }
+            for (itmp = 0; itmp < opt->choice.count; ++itmp)
+            {
+                if (!strcmp(opt->choice.values[itmp], buf))
+                {
+                    opt->choice.val = itmp;
+                    break;
+                }
+            }
+            break;
+
+        case OPT_INTEGER:
+            CFG_ReadVar(ui_game, opt->cfgvar, &opt->inum.val);
+            if (opt->inum.val < opt->inum.min) opt->inum.val = opt->inum.min;
+            else if (opt->inum.val > opt->inum.max) opt->inum.val = opt->inum.max;
+            break;
+
+        case OPT_DOUBLE:
+            CFG_ReadVar(ui_game, opt->cfgvar, &opt->dnum.val);
+            if (opt->dnum.val < opt->dnum.min) opt->dnum.val = opt->dnum.min;
+            else if (opt->dnum.val > opt->dnum.max) opt->dnum.val = opt->dnum.max;
+            break;
+
+        case OPT_STRING:
+            CFG_ReadVar(ui_game, opt->cfgvar, opt->string);
+            break;
+
+        case OPT_BUTTON:
+            // TODO
+            break;
+
+        default:
+            break;
+    }
+}
+
+static void OptWriteVar(struct Option *opt)
+{
+    int vtype;
+    int itmp;
+    double dtmp;
+    char *stmp;
+    char buf[100];
+
+    switch (opt->type)
+    {
+        case OPT_BOOLEAN:
+            CFG_WriteVar(ui_game, opt->cfgvar, &opt->boolean);
+            break;
+
+        case OPT_CHOICE:
+            vtype = CFG_VarType(ui_game, opt->cfgvar);
+            stmp = (char *)opt->choice.values[opt->choice.val];
+            if (vtype == CVAR_INTEGER)
+            {
+                sscanf(stmp, "%d", &itmp);
+                CFG_WriteVar(ui_game, opt->cfgvar, &itmp);
+            }
+            else if (vtype == CVAR_DOUBLE)
+            {
+                sscanf(stmp, "%lf", &dtmp);
+                CFG_WriteVar(ui_game, opt->cfgvar, &dtmp);
+            }
+            else if (vtype == CVAR_STRING)
+            {
+                CFG_WriteVar(ui_game, opt->cfgvar, stmp);
+            }
+            break;
+
+        case OPT_INTEGER:
+            CFG_WriteVar(ui_game, opt->cfgvar, &opt->inum.val);
+            break;
+
+        case OPT_DOUBLE:
+            CFG_WriteVar(ui_game, opt->cfgvar, &opt->dnum.val);
+            break;
+
+        case OPT_STRING:
+            CFG_WriteVar(ui_game, opt->cfgvar, &opt->string);
+            break;
+
+        case OPT_BUTTON:
+            // TODO
+            break;
+
+        default:
+            break;
+    }
+}
+
+static void OptsReload(struct Menu *menu)
+{
+    struct Option *opts = menu->opts;
+    int numopts = menu->numopts;
+
+    for (int i = 0; i < numopts; ++i)
+        OptLoadVar(opts + i);
+}
+
+static void OptsWrite(struct Menu *menu)
+{
+    struct Option *opts = menu->opts;
+    int numopts = menu->numopts;
+
+    for (int i = 0; i < numopts; ++i)
+        OptWriteVar(opts + i);
+}
+
+// general ui stuff
 
 int UI_Init(void)
 {
+    ui_tab_w = SCR_W / MENU_COUNT;
+
     for (int i = 0; i < MENU_COUNT; ++i)
+    {
+        if (ui_menus[i]->opts)
+            OptsReload(ui_menus[i]);
         ui_menus[i]->init();
+        ui_tab_x[i] = (ui_tab_w / 2) + ui_tab_w * i;
+    }
 
     return 0;
 }
@@ -27,15 +323,37 @@ int UI_Update(void)
 {
     struct Menu *menu = ui_menus[ui_current_menu];
 
-    if (IN_ButtonPressed(B_CIRCLE))
+    if (IN_ButtonPressed(B_SELECT) || IN_ButtonPressed(B_RTRIGGER))
     {
-        if (menu->parent < MENU_MAIN) return 1;
-        UI_PopMenu();
+        ui_current_menu += 1;
+        if (ui_current_menu >= MENU_COUNT)
+            ui_current_menu = 0;
         return 0;
     }
 
-    if (IN_ButtonPressed(B_START))
+    if (IN_ButtonPressed(B_LTRIGGER))
+    {
+        ui_current_menu -= 1;
+        if (ui_current_menu < 0)
+            ui_current_menu = MENU_COUNT - 1;
+        return 0;
+    }
+
+    if (IN_ButtonPressed(B_CIRCLE))
+    {
+        UI_SaveOptions();
         return 1;
+    }
+
+    if (IN_ButtonPressed(B_START))
+    {
+        UI_SaveOptions();
+        CFG_SaveAll();
+        FS_ExecGame(ui_game);
+    }
+
+    if (menu->opts)
+        OptsUpdate(menu);
 
     menu->update();
 
@@ -46,34 +364,49 @@ void UI_Draw(void)
 {
     struct Menu *menu = ui_menus[ui_current_menu];
 
-    R_Print(P_XCENTER, SCR_CX, 32, C_WHITE, menu->title);
+    if (menu->opts)
+        OptsDraw(menu);
+
     menu->draw();
+
+    R_Print(P_XCENTER, SCR_CX, 80, C_WHITE, menu->title);
+
+    for (int i = 0; i < MENU_COUNT; ++i)
+    {
+        unsigned c = (ui_current_menu == i) ? C_GREEN : C_WHITE;
+        R_Print(P_XCENTER, ui_tab_x[i], 32, c, ui_menus[i]->tabname);
+    }
+
+    R_DrawLine(0, 40, SCR_W, 40, C_LTGREY);
+}
+
+void UI_Redraw(void)
+{
+    R_BeginDrawing();
+    R_Clear(C_BLACK);
+    UI_Draw();
+    R_EndDrawing();
+}
+
+void UI_ReloadOptions(void)
+{
+    for (int i = 0; i < MENU_COUNT; ++i)
+    {
+        if (ui_menus[i]->opts)
+            OptsReload(ui_menus[i]);
+    }
+}
+
+void UI_SaveOptions(void)
+{
+    for (int i = 0; i < MENU_COUNT; ++i)
+    {
+        if (ui_menus[i]->opts)
+            OptsWrite(ui_menus[i]);
+    }
 }
 
 void UI_Free(void)
 {
 
-}
-
-struct Menu *UI_ParentMenu(int mi)
-{
-    if (mi < 0 || mi >= MENU_COUNT) return NULL;
-    struct Menu *menu = ui_menus[mi];
-    if (menu->parent < 0) return NULL;
-    return ui_menus[menu->parent];
-}
-
-void UI_PushMenu(int mi, int arg)
-{
-    if (mi < 0 || mi >= MENU_COUNT) return;
-    struct Menu *menu = ui_menus[ui_current_menu];
-    struct Menu *nextmenu = ui_menus[mi];
-    nextmenu->arg = arg;
-    ui_current_menu = mi;
-}
-
-void UI_PopMenu(void)
-{
-    struct Menu *menu = ui_menus[ui_current_menu];
-    ui_current_menu = menu->parent;
 }

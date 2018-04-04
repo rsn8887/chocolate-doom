@@ -115,3 +115,8 @@ void R_DrawFrame(int x1, int y1, int x2, int y2, int w, unsigned c)
     vita2d_draw_rectangle(x1, y1, w, y2 - y1, c);
     vita2d_draw_rectangle(x2 - w, y1, w, y2 - y1, c);
 }
+
+void R_DrawLine(int x1, int y1, int x2, int y2, unsigned c)
+{
+    vita2d_draw_line(x1, y1, x2, y2, c);
+}

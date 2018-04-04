@@ -5,8 +5,8 @@ LIBS =\
 	-lSceCommonDialog_stub -lpng16 -lz
 
 CFILES :=\
-main.c ui.c screen.c input.c files.c utils.c \
-ui_main.c ui_pwads.c
+main.c ui.c screen.c input.c configs.c files.c utils.c \
+ui_main.c ui_video.c ui_audio.c ui_input.c ui_pwads.c
 
 OBJS := $(CFILES:.c=.o)
 

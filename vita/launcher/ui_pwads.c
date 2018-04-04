@@ -12,19 +12,19 @@ void UI_MenuFiles_Draw(void);
 struct Menu ui_menu_pwads =
 {
     MENU_PWADS,
+    "PWADs",
     "Select PWADs",
-    MENU_MAIN, -1,
+    NULL, 0, 0,
     UI_MenuFiles_Init,
     UI_MenuFiles_Update,
     UI_MenuFiles_Draw,
 };
 
 static struct Menu *self = &ui_menu_pwads;
-static struct Menu *parent = NULL;
 
 void UI_MenuFiles_Init(void)
 {
-    parent = UI_ParentMenu(MENU_PWADS);
+
 }
 
 void UI_MenuFiles_Update(void)
