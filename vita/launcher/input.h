@@ -16,6 +16,8 @@ enum VitaButton
     B_DRIGHT,
     B_SELECT,
     B_START,
+    B_TOUCH1,
+    B_TOUCH2,
 
     // dummy buttons for analogs
     B_LSTICK = 14,
@@ -31,3 +33,6 @@ void IN_Free(void);
 int IN_ButtonPressed(int btn);
 void IN_WaitForButton(int btn);
 int IN_GetFirstButton(void);
+
+int IN_ButtonToKey(int btn);
+int IN_KeyToButton(int key);

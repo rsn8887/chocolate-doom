@@ -53,6 +53,7 @@ static const char *std_vars[] =
     "snd_channels",
     "snd_musicdevice",
     "snd_sfxdevice",
+    "joyb_speed",
     "usegamma",
     "savedir",
     "back_flat",

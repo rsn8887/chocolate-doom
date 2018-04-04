@@ -9,10 +9,13 @@
 #include <stdio.h>
 #include <string.h>
 
+#define SCROLL_SZ 12
+
 extern struct Menu ui_menu_main;
 extern struct Menu ui_menu_video;
 extern struct Menu ui_menu_audio;
 extern struct Menu ui_menu_input;
+extern struct Menu ui_menu_binds;
 extern struct Menu ui_menu_pwads;
 
 static struct Menu *ui_menus[MENU_COUNT] =
@@ -21,6 +24,7 @@ static struct Menu *ui_menus[MENU_COUNT] =
     &ui_menu_video,
     &ui_menu_audio,
     &ui_menu_input,
+    &ui_menu_binds,
     &ui_menu_pwads,
 //  &ui_menu_net,
 };
@@ -71,6 +75,8 @@ static void OptActivate(struct Option *opt)
         opt->button = -2;
         UI_Redraw();
         opt->button = IN_GetFirstButton();
+        if (opt->button == B_START)
+            opt->button = -1;
     }
     else if (opt->type == OPT_STRING)
     {
@@ -89,14 +95,19 @@ static void OptsUpdate(struct Menu *menu)
 
     if (IN_ButtonPressed(B_DDOWN))
     {
-        menu->sel += 1;
+        menu->sel++;
         if (menu->sel >= numopts) menu->sel = 0;
     }
     else if (IN_ButtonPressed(B_DUP))
     {
-        menu->sel -= 1;
+        menu->sel--;
         if (menu->sel < 0) menu->sel = numopts - 1;
     }
+
+    if (menu->sel < menu->scroll)
+        menu->scroll = menu->sel;
+    else if (menu->sel >= menu->scroll + SCROLL_SZ)
+        menu->scroll = menu->sel - SCROLL_SZ + 1;
 
     if (IN_ButtonPressed(B_CROSS))
         OptActivate(opts + menu->sel);
@@ -117,7 +128,7 @@ static void OptDraw(struct Option *opt, int x, int y, int sel)
     switch (opt->type)
     {
         case OPT_BOOLEAN:
-            tmp = opt->boolean ? "ON" : "OFF";
+            tmp = opt->boolean ? "On" : "Off";
             R_Print(P_ARIGHT, x, y, c, tmp);
             break;
 
@@ -139,11 +150,17 @@ static void OptDraw(struct Option *opt, int x, int y, int sel)
 
         case OPT_BUTTON:
             if (opt->button == -1)
-                R_Print(P_ARIGHT, x, y, c, "UNBOUND");
+                R_Print(P_ARIGHT, x, y, c, "None");
             else if (opt->button == -2)
-                R_Print(P_ARIGHT, x, y, c, "PRESS A BUTTON...");
+                R_Print(P_ARIGHT, x, y, c, "...");
+            else if (opt->button == B_TOUCH1)
+                R_Print(P_ARIGHT, x, y, c, "F. Touch");
+            else if (opt->button == B_TOUCH2)
+                R_Print(P_ARIGHT, x, y, c, "B. Touch");
+            else if (opt->button == B_START || opt->button == B_SELECT)
+                R_DrawButton(x - 42, y - 11, c, opt->button);
             else
-                R_DrawButton(x - 21, y, c, opt->button);
+                R_DrawButton(x - 21, y - 11, c, opt->button);
             break;
 
         default:
@@ -156,9 +173,11 @@ static void OptsDraw(struct Menu *menu)
     struct Option *opts = menu->opts;
     int numopts = menu->numopts;
     int sel = menu->sel;
+    int scroll = menu->scroll;
+    int stop = scroll + SCROLL_SZ;
 
     int y = 160;
-    for (int i = 0; i < numopts; ++i)
+    for (int i = scroll; i < numopts && i < stop; ++i)
     {
         OptDraw(opts + i, 160, y, i == sel);
         y += 24;
@@ -167,11 +186,12 @@ static void OptsDraw(struct Menu *menu)
 
 static void OptLoadVar(struct Option *opt)
 {
-    int vtype;
     int itmp;
     double dtmp;
     char *stmp;
     char buf[100];
+
+    int vtype = CFG_VarType(ui_game, opt->cfgvar);
 
     switch (opt->type)
     {
@@ -180,7 +200,6 @@ static void OptLoadVar(struct Option *opt)
             break;
 
         case OPT_CHOICE:
-            vtype = CFG_VarType(ui_game, opt->cfgvar);
             if (vtype == CVAR_INTEGER)
             {
                 CFG_ReadVar(ui_game, opt->cfgvar, &itmp);
@@ -222,7 +241,8 @@ static void OptLoadVar(struct Option *opt)
             break;
 
         case OPT_BUTTON:
-            // TODO
+            CFG_ReadVar(ui_game, opt->cfgvar, &itmp);
+            opt->button = IN_KeyToButton(itmp);
             break;
 
         default:
@@ -276,7 +296,8 @@ static void OptWriteVar(struct Option *opt)
             break;
 
         case OPT_BUTTON:
-            // TODO
+            itmp = IN_ButtonToKey(opt->button);
+            CFG_WriteVar(ui_game, opt->cfgvar, &itmp);
             break;
 
         default:
@@ -288,6 +309,9 @@ static void OptsReload(struct Menu *menu)
 {
     struct Option *opts = menu->opts;
     int numopts = menu->numopts;
+
+    menu->sel = 0;
+    menu->scroll = 0;
 
     for (int i = 0; i < numopts; ++i)
         OptLoadVar(opts + i);
@@ -374,10 +398,18 @@ void UI_Draw(void)
     for (int i = 0; i < MENU_COUNT; ++i)
     {
         unsigned c = (ui_current_menu == i) ? C_GREEN : C_WHITE;
-        R_Print(P_XCENTER, ui_tab_x[i], 32, c, ui_menus[i]->tabname);
+        R_Print(P_XCENTER, ui_tab_x[i], 24, c, ui_menus[i]->tabname);
     }
 
     R_DrawLine(0, 40, SCR_W, 40, C_LTGREY);
+
+    R_Print(
+        P_ABOTTOM | P_ARIGHT,
+        SCR_W - 4, SCR_H + 8, C_GREY,
+        "v%s (%s), build date %s %s",
+        VERSION, CHOCOLATE_BUILD_COMMIT,
+        __DATE__, __TIME__
+    );
 }
 
 void UI_Redraw(void)
@@ -392,6 +424,8 @@ void UI_ReloadOptions(void)
 {
     for (int i = 0; i < MENU_COUNT; ++i)
     {
+        if (ui_menus[i]->reload)
+            ui_menus[i]->reload();
         if (ui_menus[i]->opts)
             OptsReload(ui_menus[i]);
     }

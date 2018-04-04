@@ -1,12 +1,12 @@
 LIBS =\
 	-lvita2d -lSceAppMgr_stub -lSceDisplay_stub -lSceGxm_stub \
-	-lSceSysmodule_stub -lSceCtrl_stub -lm \
+	-lSceSysmodule_stub -lSceTouch_stub -lSceCtrl_stub -lm \
 	-lScePgf_stub -ljpeg -lfreetype -lc \
 	-lSceCommonDialog_stub -lpng16 -lz
 
 CFILES :=\
 main.c ui.c screen.c input.c configs.c files.c utils.c \
-ui_main.c ui_video.c ui_audio.c ui_input.c ui_pwads.c
+ui_main.c ui_video.c ui_audio.c ui_input.c ui_binds.c ui_pwads.c
 
 OBJS := $(CFILES:.c=.o)
 

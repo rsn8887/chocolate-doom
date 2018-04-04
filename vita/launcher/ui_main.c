@@ -15,7 +15,7 @@ struct Menu ui_menu_main =
     MENU_MAIN,
     "Game",
     "Select game",
-    NULL, 0, 0,
+    NULL, 0, 0, 0,
     UI_MenuMain_Init,
     UI_MenuMain_Update,
     UI_MenuMain_Draw,

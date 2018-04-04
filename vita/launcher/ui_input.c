@@ -9,6 +9,9 @@ void UI_MenuInput_Init(void);
 void UI_MenuInput_Update(void);
 void UI_MenuInput_Draw(void);
 
+static const char *autorun_labels[] = { "Off", "On" };
+static const char *autorun_values[] = { "-1", "29" };
+
 static const char *joy_axis_labels[] =
 {
     "Disabled",
@@ -17,11 +20,20 @@ static const char *joy_axis_labels[] =
     "R Stick X",
     "R Stick Y",
 };
-
 static const char *joy_axis_values[] = { "-1", "0", "1", "2", "3" };
 
 static struct Option input_opts[] =
 {
+    {
+        OPT_CHOICE,
+        "Always run",
+        "joyb_speed", NULL,
+        .choice =
+        {
+            autorun_labels, autorun_values,
+            2, 0,
+        },
+    },
     {
         OPT_CHOICE,
         "Move axis",
@@ -75,7 +87,7 @@ struct Menu ui_menu_input =
     MENU_INPUT,
     "Input",
     "Input settings",
-    input_opts, 5, 0,
+    input_opts, 6, 0, 0,
     UI_MenuInput_Init,
     UI_MenuInput_Update,
     UI_MenuInput_Draw,

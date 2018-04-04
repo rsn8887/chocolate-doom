@@ -99,7 +99,7 @@ void R_DrawButton(int x, int y, unsigned c, int button)
     {
         int tx = 21 * (button % 4);
         int ty = 21 * (button / 4);
-        vita2d_draw_texture_tint_part(fnt_buttons,  x, y, tx, ty, 21, 21, c);
+        vita2d_draw_texture_tint_part(fnt_buttons, x, y, tx, ty, 21, 21, c);
     }
 }
 

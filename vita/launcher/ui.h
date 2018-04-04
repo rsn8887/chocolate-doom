@@ -9,6 +9,7 @@ enum Menus
     MENU_VIDEO,
     MENU_AUDIO,
     MENU_INPUT,
+    MENU_BINDS,
     MENU_PWADS,
 
     MENU_COUNT
@@ -74,10 +75,12 @@ struct Menu
     struct Option *opts;
     int numopts;
     int sel;
+    int scroll;
 
     void (*init)(void);
     void (*update)(void);
     void (*draw)(void);
+    void (*reload)(void);
 };
 
 extern int ui_current_menu;

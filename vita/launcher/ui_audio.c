@@ -68,7 +68,7 @@ struct Menu ui_menu_audio =
     MENU_AUDIO,
     "Audio",
     "Audio settings",
-    audio_opts, 5, 0,
+    audio_opts, 5, 0, 0,
     UI_MenuAudio_Init,
     UI_MenuAudio_Update,
     UI_MenuAudio_Draw,

@@ -36,7 +36,7 @@ struct Menu ui_menu_video =
     MENU_VIDEO,
     "Video",
     "Video settings",
-    video_opts, 3, 0,
+    video_opts, 3, 0, 0,
     UI_MenuVideo_Init,
     UI_MenuVideo_Update,
     UI_MenuVideo_Draw,

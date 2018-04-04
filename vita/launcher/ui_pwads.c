@@ -14,7 +14,7 @@ struct Menu ui_menu_pwads =
     MENU_PWADS,
     "PWADs",
     "Select PWADs",
-    NULL, 0, 0,
+    NULL, 0, 0, 0,
     UI_MenuFiles_Init,
     UI_MenuFiles_Update,
     UI_MenuFiles_Draw,
