@@ -11,7 +11,7 @@ void UI_MenuAudio_Draw(void);
 
 static const char *sample_rates[] = { "11025", "22050", "44100", "48000" };
 
-static const char *music_type_labels[] = { "None", "OPL3 MIDI", "Digital" };
+static const char *music_type_labels[] = { "None", "OPL3", "Digital" };
 static const char *music_type_values[] = { "0", "3", "8" };
 
 static const char *sound_type_labels[] = { "None", "PC Speaker", "Digital" };
@@ -42,7 +42,7 @@ static struct Option audio_opts[] =
     {
         OPT_CHOICE,
         "Sample rate",
-        "sample_rate", NULL,
+        "snd_samplerate", NULL,
         .choice =
         {
             sample_rates, sample_rates,

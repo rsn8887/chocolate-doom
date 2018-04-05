@@ -195,6 +195,8 @@ static int ConfigLoad(struct Config *cfg)
 
 static int ConfigSave(struct Config *cfg)
 {
+    if (!cfg->modified) return 0;
+
     static char buf[512];
     snprintf(buf, sizeof(buf), VITA_BASEDIR "/%s", cfg->name);
 
@@ -249,7 +251,6 @@ int CFG_SaveAll(void)
     int fail = 0;
     for (int i = 0; i < 4; i++)
     {
-        if (!cfgs[i][0].modified) continue;
         fail += ConfigSave(&cfgs[i][0]);
         fail += ConfigSave(&cfgs[i][1]);
     }

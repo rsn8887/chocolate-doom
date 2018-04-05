@@ -15,7 +15,6 @@ static struct Option bind_opts[] =
     { OPT_BUTTON, "Fire", "key_fire", NULL, .button = B_RTRIGGER },
     { OPT_BUTTON, "Use", "key_use", NULL, .button = B_SQUARE },
     { OPT_BUTTON, "Run", "key_speed", NULL, .button = B_LTRIGGER },
-    { OPT_BUTTON, "Use", "key_use", NULL, .button = B_SQUARE },
     { OPT_BUTTON, "Next weapon", "key_nextweapon", NULL, .button = B_TRIANGLE },
     { OPT_BUTTON, "Prev weapon", "key_prevweapon", NULL, .button = B_CIRCLE },
     { OPT_BUTTON, "Strafe left", "key_strafeleft", NULL, .button = -1 },
