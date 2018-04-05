@@ -23,6 +23,7 @@ enum OptionTypes
     OPT_DOUBLE,
     OPT_STRING,
     OPT_BUTTON,
+    OPT_FILE,
 };
 
 struct Option
@@ -63,6 +64,13 @@ struct Option
         char string[MAX_STROPT];
 
         int button;
+
+        struct
+        {
+            const char *dir;
+            const char *ext[4];
+            char val[MAX_STROPT];
+        } file;
     };
 };
 

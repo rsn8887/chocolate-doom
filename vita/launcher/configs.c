@@ -355,6 +355,7 @@ int CFG_WriteVar(int game, const char *name, void *src)
 
 int CFG_VarType(int game, const char *name)
 {
+    if (!name) return CVAR_UNKNOWN;
     struct ConfigVar *cvar = FindVar(game, name);
     if (!cvar) return CVAR_UNKNOWN;
     return cvar->type;

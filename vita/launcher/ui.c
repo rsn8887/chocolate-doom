@@ -35,6 +35,108 @@ static int ui_tab_w = 0;
 int ui_current_menu = MENU_MAIN;
 int ui_game = -1;
 
+// file dialog stuff
+
+struct FileDialog
+{
+    const char *title;
+    const char *dir;
+    const char **exts;
+
+    struct FileList flist;
+    char *output;
+    int sel;
+    int scroll;
+};
+
+static int ui_file_select = 0;
+static struct FileDialog ui_fd;
+
+static int FileDialogStart(const char *title, const char *dir, const char **exts, char *output)
+{
+    if (ui_file_select) return 1;
+
+    ui_fd.title = title;
+    ui_fd.dir = dir;
+    ui_fd.exts = exts;
+    ui_fd.output = output;
+    ui_fd.sel = ui_fd.scroll = 0;
+
+    for (const char **ext = exts; ext && *ext; ++ext)
+        FS_ListDir(&ui_fd.flist, ui_fd.dir, *ext);
+
+    ui_file_select = 1;
+    return 0;
+}
+
+static void FileDialogFinish(int success)
+{
+    if (!ui_file_select) return;
+
+    if (!ui_fd.flist.numfiles) success = 0;
+
+    if (ui_fd.output && success)
+    {
+        strncpy(
+            ui_fd.output,
+            ui_fd.flist.files[ui_fd.sel],
+            MAX_STROPT
+        );
+    }
+
+    FS_FreeFileList(&ui_fd.flist);
+
+    ui_fd.output = NULL;
+    ui_file_select = 0;
+}
+
+static void FileDialogUpdate(void)
+{
+    if (IN_ButtonPressed(B_DDOWN))
+    {
+        ui_fd.sel++;
+        if (ui_fd.sel >= ui_fd.flist.numfiles) ui_fd.sel = 0;
+    }
+    else if (IN_ButtonPressed(B_DUP))
+    {
+        ui_fd.sel--;
+        if (ui_fd.sel < 0) ui_fd.sel = ui_fd.flist.numfiles - 1;
+    }
+
+    if (ui_fd.sel < ui_fd.scroll)
+        ui_fd.scroll = ui_fd.sel;
+    else if (ui_fd.sel >= ui_fd.scroll + SCROLL_SZ)
+        ui_fd.scroll = ui_fd.sel - SCROLL_SZ + 1;
+
+    if (IN_ButtonPressed(B_CROSS))
+        FileDialogFinish(1);
+    else if (IN_ButtonPressed(B_CIRCLE))
+        FileDialogFinish(0);
+}
+
+static void FileDialogDraw(void)
+{
+    R_Print(P_XCENTER, SCR_CX, 80, C_WHITE, ui_fd.title);
+    R_Print(P_XCENTER, SCR_CX, 104, C_LTGREY, ui_fd.dir);
+
+    if (!ui_fd.flist.numfiles)
+    {
+        R_Print(0, 160, 160, C_LTGREY, "No files.");
+        return;
+    }
+
+    int y = 160;
+    int scroll = ui_fd.scroll;
+    int numfiles = ui_fd.flist.numfiles;
+    int stop = scroll + SCROLL_SZ;
+    for (int i = scroll; i < numfiles && i < stop; ++i)
+    {
+        unsigned c = (ui_fd.sel == i) ? C_GREEN : C_WHITE;
+        R_Print(0, 160, y, c, ui_fd.flist.files[i]);
+        y += 24;
+    }
+}
+
 // options stuff
 
 static void OptScroll(struct Option *opt, int dir)
@@ -81,6 +183,15 @@ static void OptActivate(struct Option *opt)
     else if (opt->type == OPT_STRING)
     {
         // TODO
+    }
+    else if (opt->type == OPT_FILE)
+    {
+        FileDialogStart(
+            "Select file",
+            opt->file.dir,
+            opt->file.ext,
+            opt->file.val
+        );
     }
     else
     {
@@ -148,6 +259,13 @@ static void OptDraw(struct Option *opt, int x, int y, int sel)
             R_Print(P_ARIGHT, x, y, c, "%s", opt->string);
             break;
 
+        case OPT_FILE:
+            if (opt->file.val[0])
+                R_Print(P_ARIGHT, x, y, c, "%s", opt->file.val);
+            else
+                R_Print(P_ARIGHT, x, y, c, "None");
+            break;
+
         case OPT_BUTTON:
             if (opt->button == -1)
                 R_Print(P_ARIGHT, x, y, c, "None");
@@ -196,7 +314,10 @@ static void OptLoadVar(struct Option *opt)
     switch (opt->type)
     {
         case OPT_BOOLEAN:
-            CFG_ReadVar(ui_game, opt->cfgvar, &opt->boolean);
+            if (opt->codevar)
+                memcpy(&opt->boolean, opt->codevar, sizeof(int));
+            else
+                CFG_ReadVar(ui_game, opt->cfgvar, &opt->boolean);
             break;
 
         case OPT_CHOICE:
@@ -214,6 +335,10 @@ static void OptLoadVar(struct Option *opt)
             {
                 CFG_ReadVar(ui_game, opt->cfgvar, buf);
             }
+            else if (opt->codevar)
+            {
+                strncpy(buf, opt->codevar, sizeof(buf));
+            }
             for (itmp = 0; itmp < opt->choice.count; ++itmp)
             {
                 if (!strcmp(opt->choice.values[itmp], buf))
@@ -225,23 +350,40 @@ static void OptLoadVar(struct Option *opt)
             break;
 
         case OPT_INTEGER:
-            CFG_ReadVar(ui_game, opt->cfgvar, &opt->inum.val);
+            if (opt->codevar)
+                memcpy(&opt->inum.val, opt->codevar, sizeof(int));
+            else
+                CFG_ReadVar(ui_game, opt->cfgvar, &opt->inum.val);
             if (opt->inum.val < opt->inum.min) opt->inum.val = opt->inum.min;
             else if (opt->inum.val > opt->inum.max) opt->inum.val = opt->inum.max;
             break;
 
         case OPT_DOUBLE:
-            CFG_ReadVar(ui_game, opt->cfgvar, &opt->dnum.val);
+            if (opt->codevar)
+                memcpy(&opt->dnum.val, opt->codevar, sizeof(double));
+            else
+                CFG_ReadVar(ui_game, opt->cfgvar, &opt->dnum.val);
             if (opt->dnum.val < opt->dnum.min) opt->dnum.val = opt->dnum.min;
             else if (opt->dnum.val > opt->dnum.max) opt->dnum.val = opt->dnum.max;
             break;
 
         case OPT_STRING:
-            CFG_ReadVar(ui_game, opt->cfgvar, opt->string);
+            if (opt->codevar)
+                strncpy(opt->string, opt->codevar, MAX_STROPT);
+            else
+                CFG_ReadVar(ui_game, opt->cfgvar, opt->string);
+            break;
+
+        case OPT_FILE:
+            if (opt->codevar)
+                strncpy(opt->file.val, opt->codevar, MAX_STROPT);
             break;
 
         case OPT_BUTTON:
-            CFG_ReadVar(ui_game, opt->cfgvar, &itmp);
+            if (opt->codevar)
+                memcpy(&itmp, opt->codevar, sizeof(int));
+            else
+                CFG_ReadVar(ui_game, opt->cfgvar, &itmp);
             opt->button = IN_KeyToButton(itmp);
             break;
 
@@ -261,7 +403,10 @@ static void OptWriteVar(struct Option *opt)
     switch (opt->type)
     {
         case OPT_BOOLEAN:
-            CFG_WriteVar(ui_game, opt->cfgvar, &opt->boolean);
+            if (opt->codevar)
+                memcpy(opt->codevar, &opt->boolean, sizeof(int));
+            else
+                CFG_WriteVar(ui_game, opt->cfgvar, &opt->boolean);
             break;
 
         case OPT_CHOICE:
@@ -281,23 +426,44 @@ static void OptWriteVar(struct Option *opt)
             {
                 CFG_WriteVar(ui_game, opt->cfgvar, stmp);
             }
+            else if (opt->codevar)
+            {
+                strcpy(opt->codevar, stmp);
+            }
             break;
 
         case OPT_INTEGER:
-            CFG_WriteVar(ui_game, opt->cfgvar, &opt->inum.val);
+            if (opt->codevar)
+                memcpy(opt->codevar, &opt->inum.val, sizeof(int));
+            else
+                CFG_WriteVar(ui_game, opt->cfgvar, &opt->inum.val);
             break;
 
         case OPT_DOUBLE:
-            CFG_WriteVar(ui_game, opt->cfgvar, &opt->dnum.val);
+            if (opt->codevar)
+                memcpy(opt->codevar, &opt->dnum.val, sizeof(double));
+            else
+                CFG_WriteVar(ui_game, opt->cfgvar, &opt->dnum.val);
             break;
 
         case OPT_STRING:
-            CFG_WriteVar(ui_game, opt->cfgvar, &opt->string);
+            if (opt->codevar)
+                strcpy(opt->codevar, opt->string);
+            else
+                CFG_WriteVar(ui_game, opt->cfgvar, &opt->string);
+            break;
+
+        case OPT_FILE:
+            if (opt->codevar)
+                strcpy(opt->codevar, opt->file.val);
             break;
 
         case OPT_BUTTON:
             itmp = IN_ButtonToKey(opt->button);
-            CFG_WriteVar(ui_game, opt->cfgvar, &itmp);
+            if (opt->codevar)
+                memcpy(opt->codevar, &itmp, sizeof(int));
+            else
+                CFG_WriteVar(ui_game, opt->cfgvar, &itmp);
             break;
 
         default:
@@ -345,6 +511,12 @@ int UI_Init(void)
 
 int UI_Update(void)
 {
+    if (ui_file_select)
+    {
+        FileDialogUpdate();
+        return 0;
+    }
+
     struct Menu *menu = ui_menus[ui_current_menu];
 
     if (IN_ButtonPressed(B_SELECT) || IN_ButtonPressed(B_RTRIGGER))
@@ -386,14 +558,21 @@ int UI_Update(void)
 
 void UI_Draw(void)
 {
-    struct Menu *menu = ui_menus[ui_current_menu];
+    if (ui_file_select)
+    {
+        FileDialogDraw();
+    }
+    else
+    {
+        struct Menu *menu = ui_menus[ui_current_menu];
 
-    if (menu->opts)
-        OptsDraw(menu);
+        if (menu->opts)
+            OptsDraw(menu);
 
-    menu->draw();
+        menu->draw();
 
-    R_Print(P_XCENTER, SCR_CX, 80, C_WHITE, menu->title);
+        R_Print(P_XCENTER, SCR_CX, 80, C_WHITE, menu->title);
+    }
 
     for (int i = 0; i < MENU_COUNT; ++i)
     {

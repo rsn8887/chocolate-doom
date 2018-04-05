@@ -22,8 +22,6 @@ struct Game fs_games[GAME_COUNT] =
     { "Strife", "strife", "strife1.wad" },
 };
 
-struct FileList fs_pwads[GAME_COUNT];
-
 static void SetError(const char *fmt, ...)
 {
     va_list argptr;
@@ -39,29 +37,18 @@ static int CheckForGame(int g)
     return fexists(buf);
 }
 
-static void BuildPWADList(int g)
-{
-    struct Game *game = fs_games + g;
-    struct FileList *flist = &(game->pwads);
-    static char dir[512];
-
-    snprintf(dir, sizeof(dir), VITA_BASEDIR "/pwads/%s", game->dir);
-
-    flist->files = NULL;
-    flist->numfiles = 0;
-
-    FS_ListDir(flist, dir, "wad");
-    FS_ListDir(flist, dir, "lmp");
-}
-
 int FS_Init(void)
 {
+    mkdir(VITA_BASEDIR, 0755);
+    mkdir(VITA_TMPDIR, 0755);
+    mkdir(VITA_BASEDIR "/pwads", 0755);
+
     int numgames = 0;
     for (int i = 0; i < GAME_COUNT; ++i)
     {
         int present = CheckForGame(i);
         fs_games[i].present = present;
-        if (present) BuildPWADList(i);
+        fs_games[i].monsters[0] = '0';
         numgames += present;
     }
 
@@ -77,8 +64,7 @@ int FS_Init(void)
 
 void FS_Free(void)
 {
-    for (int i = 0; i < GAME_COUNT; ++i)
-        FS_FreeFileList(&(fs_games[i].pwads));
+
 } 
 
 char *FS_Error(void)
@@ -134,17 +120,82 @@ void FS_FreeFileList(struct FileList *flist)
 
 void FS_ExecGame(int game)
 {
-    static char exe[128];
-    static char *argv[4];
-
     if (game < 0 || game >= GAME_COUNT) return;
 
-    snprintf(exe, sizeof(exe), "app0:/%s.bin", fs_games[game].dir);
+    struct Game *g = fs_games + game;
 
+    FILE *f = fopen(VITA_TMPDIR "/chocolat.rsp", "w");
+    if (!f) I_Error("Could not create file\n" VITA_TMPDIR "/chocolat.rsp");
+
+    fprintf(f, "-iwad %s\n", g->iwad);
+
+    int file = 0;
+    for (int i = 0; i < MAX_PWADS; ++i)
+        if (g->pwads[i][0]) { file = 1; break; }
+    if (file)
+    {
+        fprintf(f, "-file");
+        for (int i = 0; i < MAX_PWADS; ++i)
+            if (g->pwads[i][0])
+                fprintf(f, " %s", g->pwads[i]);
+        fprintf(f, "\n");
+    }
+
+    if (g->deh[0])
+        fprintf(f, "-deh %s\n", g->deh);
+
+    if (g->skill)
+        fprintf(f, "-skill %d\n", g->skill);
+
+    if (g->warp)
+    {
+        if (game < GAME_DOOM2 || game == GAME_HERETIC || game == GAME_HERETIC_SW)
+        {
+            int ep = g->warp / 10;
+            int map = g->warp % 10;
+            if (!ep) ep = 1;
+            if (!map) map = 1;
+            fprintf(f, "-warp %d %d\n", ep, map);
+        }
+        else
+        {
+            fprintf(f, "-warp %d\n", g->warp);
+        }
+    }
+
+    if (g->charclass)
+        fprintf(f, "-class %d\n", g->charclass - 1);
+
+    if (g->monsters[0] == '1')
+        fprintf(f, "-nomonsters\n");
+    else if (g->monsters[0] == '2')
+        fprintf(f, "-fast\n");
+    else if (g->monsters[0] == '4')
+        fprintf(f, "-respawn\n");
+    else if (g->monsters[0] == '6')
+        fprintf(f, "-fast -respawn\n");
+
+    if (g->record)
+    {
+        fprintf(f, "-record %s/mydemo\n", VITA_TMPDIR);
+    }
+    else if (g->demo[0])
+    {
+        fprintf(f, "-file %s\n", g->demo);
+        char *dot = strrchr(g->demo, '.');
+        if (dot) *dot = '\0'; // playdemo doesn't want extensions
+        fprintf(f, "-playdemo %s\n", g->demo);
+    }
+
+    fclose(f);
+
+    static char exe[128];
+    snprintf(exe, sizeof(exe), "app0:/%s.bin", g->dir);
+
+    static char *argv[3];
     argv[0] = exe;
-    argv[1] = "-iwad";
-    argv[2] = (char*)fs_games[game].iwad;
-    argv[3] = NULL;
+    argv[1] = "@" VITA_TMPDIR "/chocolat.rsp";
+    argv[2] = NULL;
 
     sceAppMgrLoadExec(exe, argv, NULL);
 }

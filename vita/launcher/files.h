@@ -1,5 +1,7 @@
 #pragma once
 
+#define MAX_PWADS 4
+
 enum Games
 {
     GAME_DOOM_SW,
@@ -26,8 +28,16 @@ struct Game
     const char *name;
     const char *dir;
     const char *iwad;
-    struct FileList pwads;
     int present;
+
+    char pwads[MAX_PWADS][256];
+    char deh[256];
+    char demo[256];
+    int skill;
+    int warp;
+    char monsters[2];
+    int record;
+    int charclass;
 };
 
 extern struct Game fs_games[GAME_COUNT];
