@@ -1,5 +1,6 @@
-APPNAME := ChocolateDoom
+APPNAME := Chocolate Doom
 TITLE := CHOC66666
+VPKNAME := ChocolateDoom
 
 vpk: doom heretic hexen strife launcher
 	vita-mksfoex -s TITLE_ID="$(TITLE)" "$(APPNAME)" param.sfo
@@ -14,7 +15,7 @@ vpk: doom heretic hexen strife launcher
 		--add vita/build/sce_sys/livearea/contents/bg.png=sce_sys/livearea/contents/bg.png \
 		--add vita/build/sce_sys/livearea/contents/startup.png=sce_sys/livearea/contents/startup.png \
 		--add vita/build/sce_sys/livearea/contents/template.xml=sce_sys/livearea/contents/template.xml \
-		$(APPNAME).vpk
+		$(VPKNAME).vpk
 
 doom: textscreen/libtextscreen.a opl/libopl.a pcsound/libpcsound.a
 	$(MAKE) -C src -f Makefile.vita $@

@@ -594,7 +594,7 @@ void UI_Draw(void)
     }
 
     R_DrawLine(0, 40, SCR_W, 40, C_LTGREY);
-    R_DrawLine(0, SCR_H-80, SCR_W, SCR_H-80, C_LTGREY);
+    R_DrawLine(0, SCR_H-40, SCR_W, SCR_H-40, C_LTGREY);
 
     R_Print(
         P_ABOTTOM | P_XCENTER,
