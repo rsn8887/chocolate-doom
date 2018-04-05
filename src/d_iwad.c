@@ -712,6 +712,7 @@ static void BuildIWADDirList(void)
 
 #elif defined(__vita__)
     AddIWADDir(VITA_CWD);
+    AddIWADDir(VITA_CWD "/iwads");
     // FIXME: ideally we only need to add one dir here
     AddIWADDir(VITA_CWD "/pwads");
     AddIWADDir(VITA_CWD "/pwads/doom");
