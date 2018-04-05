@@ -39,7 +39,6 @@ static struct Option bind_opts_strife[] =
     { OPT_BUTTON, "Fire", "key_fire", NULL, .button = B_RTRIGGER },
     { OPT_BUTTON, "Use", "key_use", NULL, .button = B_SQUARE },
     { OPT_BUTTON, "Run", "key_speed", NULL, .button = B_LTRIGGER },
-    { OPT_BUTTON, "Use", "key_use", NULL, .button = B_SQUARE },
     { OPT_BUTTON, "Next weapon", "key_nextweapon", NULL, .button = B_TRIANGLE },
     { OPT_BUTTON, "Prev weapon", "key_prevweapon", NULL, .button = B_CIRCLE },
     { OPT_BUTTON, "Strafe left", "key_strafeleft", NULL, .button = -1 },
@@ -60,7 +59,7 @@ struct Menu ui_menu_binds =
     MENU_BINDS,
     "Buttons",
     "Change button bindings",
-    bind_opts, 9, 0, 0,
+    bind_opts, 8, 0, 0,
     UI_MenuBinds_Init,
     UI_MenuBinds_Update,
     UI_MenuBinds_Draw,
@@ -91,22 +90,22 @@ void UI_MenuBinds_Reload(void)
         case GAME_HERETIC_SW:
         case GAME_HERETIC:
             self->opts = bind_opts;
-            self->numopts = 9 + 9;
+            self->numopts = 8 + 9;
             break;
 
         case GAME_HEXEN:
             self->opts = bind_opts;
-            self->numopts = 9 + 9 + 1;
+            self->numopts = 8 + 9 + 1;
             break;
 
         case GAME_STRIFE:
             self->opts = bind_opts_strife;
-            self->numopts = 17;
+            self->numopts = 16;
             break;
 
         default: // doom
             self->opts = bind_opts;
-            self->numopts = 9;
+            self->numopts = 8;
             break;
     }
 }

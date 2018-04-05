@@ -276,9 +276,9 @@ static void OptDraw(struct Option *opt, int x, int y, int sel)
             else if (opt->button == B_TOUCH2)
                 R_Print(P_ARIGHT, x, y, c, "B. Touch");
             else if (opt->button == B_START || opt->button == B_SELECT)
-                R_DrawButton(x - 42, y - 11, c, opt->button);
+                R_DrawButton(x - 42, y - 16, c, opt->button);
             else
-                R_DrawButton(x - 21, y - 11, c, opt->button);
+                R_DrawButton(x - 21, y - 16, c, opt->button);
             break;
 
         default:

@@ -34,7 +34,9 @@ static int CheckForGame(int g)
 {
     static char buf[512];
     snprintf(buf, sizeof(buf), VITA_BASEDIR "/%s", fs_games[g].iwad);
-    return fexists(buf);
+    int res = fexists(buf);
+    snprintf(buf, sizeof(buf), VITA_BASEDIR "/iwads/%s", fs_games[g].iwad);
+    return res || fexists(buf);
 }
 
 int FS_Init(void)
@@ -135,9 +137,14 @@ void FS_ExecGame(int game)
     if (file)
     {
         fprintf(f, "-file");
+
         for (int i = 0; i < MAX_PWADS; ++i)
             if (g->pwads[i][0])
                 fprintf(f, " %s", g->pwads[i]);
+
+        if (g->demo[0])
+            fprintf(f, " %s", g->demo);
+
         fprintf(f, "\n");
     }
 
@@ -173,7 +180,7 @@ void FS_ExecGame(int game)
     else if (g->monsters[0] == '4')
         fprintf(f, "-respawn\n");
     else if (g->monsters[0] == '6')
-        fprintf(f, "-fast -respawn\n");
+        fprintf(f, "-fast\n-respawn\n");
 
     if (g->record)
     {
@@ -181,7 +188,7 @@ void FS_ExecGame(int game)
     }
     else if (g->demo[0])
     {
-        fprintf(f, "-file %s\n", g->demo);
+        if (!file) fprintf(f, "-file %s\n", g->demo);
         char *dot = strrchr(g->demo, '.');
         if (dot) *dot = '\0'; // playdemo doesn't want extensions
         fprintf(f, "-playdemo %s\n", g->demo);
