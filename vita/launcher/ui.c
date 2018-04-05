@@ -556,11 +556,22 @@ int UI_Update(void)
     return 0;
 }
 
+static void DrawMenuHint(void)
+{
+
+}
+
+static void DrawFileDialogHint(void)
+{
+
+}
+
 void UI_Draw(void)
 {
     if (ui_file_select)
     {
         FileDialogDraw();
+        DrawFileDialogHint();
     }
     else
     {
@@ -572,6 +583,8 @@ void UI_Draw(void)
         menu->draw();
 
         R_Print(P_XCENTER, SCR_CX, 80, C_WHITE, menu->title);
+
+        DrawMenuHint();
     }
 
     for (int i = 0; i < MENU_COUNT; ++i)
@@ -581,10 +594,11 @@ void UI_Draw(void)
     }
 
     R_DrawLine(0, 40, SCR_W, 40, C_LTGREY);
+    R_DrawLine(0, SCR_H-80, SCR_W, SCR_H-80, C_LTGREY);
 
     R_Print(
-        P_ABOTTOM | P_ARIGHT,
-        SCR_W - 4, SCR_H + 8, C_GREY,
+        P_ABOTTOM | P_XCENTER,
+        SCR_CX, SCR_H + 8, C_GREY,
         "v%s (%s), build date %s %s",
         VERSION, CHOCOLATE_BUILD_COMMIT,
         __DATE__, __TIME__
