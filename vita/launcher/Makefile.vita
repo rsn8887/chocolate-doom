@@ -1,5 +1,5 @@
 LIBS =\
-	-lvita2d -lvitashaders -lSceAppMgr_stub -lSceDisplay_stub -lSceGxm_stub \
+	-lvita2d_fbo -lvitashaders -lSceAppMgr_stub -lSceDisplay_stub -lSceGxm_stub \
 	-lSceSysmodule_stub -lSceTouch_stub -lSceCtrl_stub -lm \
 	-lScePgf_stub -ljpeg -lfreetype -lc \
 	-lSceCommonDialog_stub -lpng16 -lz

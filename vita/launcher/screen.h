@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vita2d.h>
+#include <vita2d_fbo.h>
 
 // screen geometry
 

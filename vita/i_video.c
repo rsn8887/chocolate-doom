@@ -21,7 +21,7 @@
 #include "SDL.h"
 #include "SDL_opengl.h"
 #include "shader.h"
-#include <vita2d.h>
+#include <vita2d_fbo.h>
 
 #include "config.h"
 #include "d_loop.h"
@@ -867,6 +867,8 @@ static void SetVideoMode(void)
         // Enable sharp-bilinear-simple shader for sharp pixels without distortion.
         // This has to be done after the SDL renderer is created because that inits vita2d.
         shader = Vita_SetShader(VSH_SHARP_BILINEAR_SIMPLE);
+
+        //vita2d_texture_set_alloc_memblock_type(SCE_KERNEL_MEMBLOCK_TYPE_USER_RW);
     }
     else if (!strcmp(scaling_filter, "scale2x"))
     {

@@ -96,7 +96,7 @@ EXTERNAL_LIBS =\
 -lSDL2_net             \
 -lSDL2_mixer           \
 -lSDL2                 \
--lvita2d               \
+-lvita2d_fbo               \
 -lvitashaders          \
 -lpng                  \
 -lvorbisfile           \
