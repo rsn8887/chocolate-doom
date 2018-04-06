@@ -14,8 +14,7 @@ i_main.c        \
 i_system.c      \
 m_argv.c        \
 m_misc.c        \
-../vita/hacks.c \
-../vita/psp2_shader.c
+../vita/hacks.c
 
 # Source files used by the game binaries (chocolate-doom, etc.)
 
@@ -39,6 +38,7 @@ i_sdlsound.c      \
 i_sound.c         \
 i_timer.c         \
 ../vita/i_video.c \
+../vita/shader.c  \
 i_videohr.c       \
 midifile.c        \
 mus2mid.c         \
@@ -96,8 +96,8 @@ EXTERNAL_LIBS =\
 -lSDL2_net             \
 -lSDL2_mixer           \
 -lSDL2                 \
--L../vita/vitashaderlibs/vita2d_fbo/lib -lvita2d \
--L../vitashaderlibs/vita-shader-collection/lib -lvitashaders \
+-lvita2d               \
+-lvitashaders          \
 -lpng                  \
 -lvorbisfile           \
 -lvorbis               \
@@ -127,13 +127,11 @@ LIBS = $(COMMON_LIBS) $(EXTERNAL_LIBS)
 CFLAGS =\
 -mtune=cortex-a9 -mfpu=neon -mthumb                       \
 -O2 -g                                                    \
--Wl,-q -fsigned-char -fno-short-enums                      \
+-Wl,-q -fsigned-char -fno-short-enums                     \
 -Wall -Wdeclaration-after-statement -Wredundant-decls     \
 -D_REENTRANT -DHAVE_CONFIG_H                              \
--I. -I../vita \
--I../vita/vitashaderlibs/vita2d_fbo/includes \
--I../vita/vitashaderlibs/vita-shader-collection/includes \
--I../textscreen -I../opl -I../pcsound       \
+-I. -I../vita                                             \
+-I../textscreen -I../opl -I../pcsound                     \
 -I$(VITAROOT)/include/SDL2 -I$(VITAROOT)/include/libpng16
 
 # Targets for final executables

@@ -6,56 +6,56 @@
 // use https://github.com/frangarcj/vita2dlib/tree/fbo
 // and https://github.com/frangarcj/vita-shader-collection/releases
 
-#include "psp2_shader.h"
+#include "shader.h"
 
-#include <lcd3x_v.h>
-#include <lcd3x_f.h>
-#include <gtu_v.h>
-#include <gtu_f.h>
-#include <texture_v.h>
-#include <texture_f.h>
-#include <opaque_v.h>
-#include <bicubic_f.h>
-#include <xbr_2x_v.h>
-#include <xbr_2x_f.h>
-#include <xbr_2x_fast_v.h>
-#include <xbr_2x_fast_f.h>
-#include <advanced_aa_v.h>
-#include <advanced_aa_f.h>
-#include <scale2x_f.h>
-#include <scale2x_v.h>
-#include <sharp_bilinear_f.h>
-#include <sharp_bilinear_v.h>
-#include <sharp_bilinear_simple_f.h>
-#include <sharp_bilinear_simple_v.h>
-//#include "xbr_2x_noblend_f.h"
-//#include "xbr_2x_noblend_v.h"
-#include <fxaa_v.h>
-#include <fxaa_f.h>
-#include <crt_easymode_f.h>
+#include "shaders/lcd3x_v.h"
+#include "shaders/lcd3x_f.h"
+#include "shaders/gtu_v.h"
+#include "shaders/gtu_f.h"
+#include "shaders/texture_v.h"
+#include "shaders/texture_f.h"
+#include "shaders/opaque_v.h"
+#include "shaders/bicubic_f.h"
+#include "shaders/xbr_2x_v.h"
+#include "shaders/xbr_2x_f.h"
+#include "shaders/xbr_2x_fast_v.h"
+#include "shaders/xbr_2x_fast_f.h"
+#include "shaders/advanced_aa_v.h"
+#include "shaders/advanced_aa_f.h"
+#include "shaders/scale2x_f.h"
+#include "shaders/scale2x_v.h"
+#include "shaders/sharp_bilinear_f.h"
+#include "shaders/sharp_bilinear_v.h"
+#include "shaders/sharp_bilinear_simple_f.h"
+#include "shaders/sharp_bilinear_simple_v.h"
+// #include "shaders/xbr_2x_noblend_f.h"
+// #include "shaders/xbr_2x_noblend_v.h"
+#include "shaders/fxaa_v.h"
+#include "shaders/fxaa_f.h"
+#include "shaders/crt_easymode_f.h"
 
 
-vita2d_shader *setPSP2Shader(PSP2Shader shaderType) {
-
+vita2d_shader *Vita_SetShader(VitaShader shaderType)
+{
     vita2d_shader *shader;
-    switch (shaderType) {
-
-        case LCD3X:
+    switch (shaderType)
+    {
+        case VSH_LCD3X:
             shader = vita2d_create_shader((SceGxmProgram *) lcd3x_v, (SceGxmProgram *) lcd3x_f);
             break;
-        case SCALE2X:
+        case VSH_SCALE2X:
             shader = vita2d_create_shader((SceGxmProgram *) scale2x_v, (SceGxmProgram *) scale2x_f);
             break;
-        case AAA:
+        case VSH_AAA:
             shader = vita2d_create_shader((SceGxmProgram *) advanced_aa_v, (SceGxmProgram *) advanced_aa_f);
             break;
-        case SHARP_BILINEAR:
+        case VSH_SHARP_BILINEAR:
             shader = vita2d_create_shader((SceGxmProgram *) sharp_bilinear_v, (SceGxmProgram *) sharp_bilinear_f);
             break;
-        case SHARP_BILINEAR_SIMPLE:
+        case VSH_SHARP_BILINEAR_SIMPLE:
             shader = vita2d_create_shader((SceGxmProgram *) sharp_bilinear_simple_v, (SceGxmProgram *) sharp_bilinear_simple_f);
             break;
-        case FXAA:
+        case VSH_FXAA:
             shader = vita2d_create_shader((SceGxmProgram *) fxaa_v, (SceGxmProgram *) fxaa_f);
             break;
         default:
@@ -68,7 +68,8 @@ vita2d_shader *setPSP2Shader(PSP2Shader shaderType) {
     vita2d_texture_set_vertexInput(&shader->vertexInput);
     vita2d_texture_set_fragmentInput(&shader->fragmentInput);
 
-    for(int i=0; i<3; i++) {
+    for(int i = 0; i < 3; i++)
+    {
         vita2d_start_drawing();
         vita2d_clear_screen();
         vita2d_wait_rendering_done();
@@ -78,8 +79,10 @@ vita2d_shader *setPSP2Shader(PSP2Shader shaderType) {
     return shader;
 }
 
-void clearPSP2Shader(vita2d_shader *shader) {
-    if (shader != NULL) {
+void Vita_ClearShader(vita2d_shader *shader)
+{
+    if (shader != NULL)
+    {
         vita2d_wait_rendering_done();
         vita2d_free_shader(shader);
     }

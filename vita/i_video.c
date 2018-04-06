@@ -20,7 +20,7 @@
 
 #include "SDL.h"
 #include "SDL_opengl.h"
-#include "psp2_shader.h"
+#include "shader.h"
 #include <vita2d.h>
 
 #include "config.h"
@@ -716,6 +716,16 @@ static void CalculateTargetRect(void)
     double aspect;
     int scale;
 
+    if (aspect_ratio_correct == 2)
+    {
+        // special case: fit to screen
+        target_rect.x = 0;
+        target_rect.y = 0;
+        target_rect.w = VITA_SCR_W;
+        target_rect.h = VITA_SCR_H;
+        return;
+    }
+
     if (integer_scaling)
     {
         scale = VITA_SCR_H / actualheight;
@@ -856,7 +866,7 @@ static void SetVideoMode(void)
         SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
         // Enable sharp-bilinear-simple shader for sharp pixels without distortion.
         // This has to be done after the SDL renderer is created because that inits vita2d.
-        shader = setPSP2Shader(SHARP_BILINEAR_SIMPLE);
+        shader = Vita_SetShader(VSH_SHARP_BILINEAR_SIMPLE);
     }
     else
     {
