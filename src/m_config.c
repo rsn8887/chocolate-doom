@@ -727,6 +727,15 @@ static default_t extra_defaults_list[] =
 
     CONFIG_VARIABLE_INT(aspect_ratio_correct),
 
+#ifdef __vita__
+    //!
+    // Texture filter using when scaling.
+    // "nearest", "linear" or "sharp"
+    //
+
+    CONFIG_VARIABLE_STRING(scaling_filter),
+
+#endif
     //!
     // If non-zero, forces integer scales for resolution-independent rendering.
     //

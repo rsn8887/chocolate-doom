@@ -20,6 +20,8 @@
 
 #include "SDL.h"
 #include "SDL_opengl.h"
+#include "psp2_shader.h"
+#include <vita2d.h>
 
 #include "config.h"
 #include "d_loop.h"
@@ -38,9 +40,6 @@
 #include "v_video.h"
 #include "w_wad.h"
 #include "z_zone.h"
-#include "psp2_shader.h"
-#include <vita2d.h>
-vita2d_shader *shader = NULL;
 
 #define VITA_SCR_W 960
 #define VITA_SCR_H 544
@@ -50,6 +49,10 @@ vita2d_shader *shader = NULL;
 
 static SDL_Window *screen;
 static SDL_Renderer *renderer;
+
+// Current vita2d shader, used for sharp bilinear filtering
+
+static vita2d_shader *shader = NULL;
 
 // Window title
 
@@ -836,13 +839,30 @@ static void SetVideoMode(void)
                 SDL_GetError());
     }
 
-	// For the sharp_bilinear_simple shader to work, linear filtering has to be enabled.
-	// This is done by a simple command here, supported by SDL2 for Vita since 2017/12/24.
-	// This affects all textures created after this command.
-	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
-	//Enable sharp-bilinear-simple shader for sharp pixels without distortion.
-	//This has to be done after the SDL renderer is created because that inits vita2d.
-	shader = setPSP2Shader(SHARP_BILINEAR_SIMPLE);
+    // Set the scaling quality for rendering and immediate texture.
+    // Defaults to "nearest", which is gritty and pixelated and resembles
+    // software scaling pretty well.  "linear" can be set as an alternative,
+    // which may give better results at low resolutions.
+
+    if (!strcmp(scaling_filter, "linear"))
+    {
+        SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
+    }
+    else if (!strcmp(scaling_filter, "sharp"))
+    {
+        // For the sharp_bilinear_simple shader to work, linear filtering has to be enabled.
+        // This is done by a simple command here, supported by SDL2 for Vita since 2017/12/24.
+        // This affects all textures created after this command.
+        SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
+        // Enable sharp-bilinear-simple shader for sharp pixels without distortion.
+        // This has to be done after the SDL renderer is created because that inits vita2d.
+        shader = setPSP2Shader(SHARP_BILINEAR_SIMPLE);
+    }
+    else
+    {
+        scaling_filter = "nearest";
+        SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
+    }
 
     // Blank out the full screen area in case there is any junk in
     // the borders that won't otherwise be overwritten.
@@ -877,25 +897,6 @@ static void SetVideoMode(void)
     {
         SDL_DestroyTexture(texture);
     }
-
-    // Set the scaling quality for rendering and immediate texture.
-    // Defaults to "nearest", which is gritty and pixelated and resembles
-    // software scaling pretty well.  "linear" can be set as an alternative,
-    // which may give better results at low resolutions.
-
-    // sharp-bilinear-simple shader only works with "linear", so the following
-    // is commented out
-    /*
-    if (!strcmp(scaling_filter, "linear"))
-    {
-        SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
-    }
-    else
-    {
-        scaling_filter = "nearest";
-        SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
-    }
-    */
 
     // Create the intermediate texture that the RGBA surface gets loaded into.
     // The SDL_TEXTUREACCESS_STREAMING flag means that this texture's content
@@ -1031,4 +1032,5 @@ void I_BindVideoVariables(void)
     M_BindStringVariable("window_position",        &window_position);
     M_BindIntVariable("usegamma",                  &usegamma);
     M_BindIntVariable("png_screenshots",           &png_screenshots);
+    M_BindStringVariable("scaling_filter",         &scaling_filter);
 }
