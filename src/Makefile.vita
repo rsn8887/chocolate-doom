@@ -14,7 +14,8 @@ i_main.c        \
 i_system.c      \
 m_argv.c        \
 m_misc.c        \
-../vita/hacks.c
+../vita/hacks.c \
+../vita/psp2_shader.c
 
 # Source files used by the game binaries (chocolate-doom, etc.)
 
@@ -95,7 +96,8 @@ EXTERNAL_LIBS =\
 -lSDL2_net             \
 -lSDL2_mixer           \
 -lSDL2                 \
--lvita2d               \
+-L../vita/vitashaderlibs/vita2d_fbo/lib -lvita2d \
+-L../vitashaderlibs/vita-shader-collection/lib -lvitashaders \
 -lpng                  \
 -lvorbisfile           \
 -lvorbis               \
@@ -128,7 +130,10 @@ CFLAGS =\
 -Wl,-q -fsigned-char -fno-short-enums                      \
 -Wall -Wdeclaration-after-statement -Wredundant-decls     \
 -D_REENTRANT -DHAVE_CONFIG_H                              \
--I. -I../vita -I../textscreen -I../opl -I../pcsound       \
+-I. -I../vita \
+-I../vita/vitashaderlibs/vita2d_fbo/includes \
+-I../vita/vitashaderlibs/vita-shader-collection/includes \
+-I../textscreen -I../opl -I../pcsound       \
 -I$(VITAROOT)/include/SDL2 -I$(VITAROOT)/include/libpng16
 
 # Targets for final executables
