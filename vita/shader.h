@@ -4,6 +4,7 @@
 //
 
 // use https://github.com/frangarcj/vita2dlib/tree/fbo
+// and https://github.com/frangarcj/vita-shader-collection/releases
 
 #ifndef PSP2_SHADER_H
 #define PSP2_SHADER_H

@@ -12,8 +12,20 @@ void UI_MenuVideo_Draw(void);
 static const char *aspect_labels[] = { "8:5", "4:3", "Fit to screen" };
 static const char *aspect_values[] = { "0", "1", "2" };
 
-static const char *filter_labels[] = { "None", "Bilinear", "Sharp bilinear" };
-static const char *filter_values[] = { "nearest", "linear", "sharp" };
+static const char *filter_labels[] = 
+{ 
+    "None",
+    "Bilinear",
+    "Sharp bilinear",
+    "Scale2x",
+};
+static const char *filter_values[] =
+{ 
+    "nearest",
+    "linear",
+    "sharp",
+    "scale2x",
+};
 
 static struct Option video_opts[] =
 {
@@ -40,7 +52,7 @@ static struct Option video_opts[] =
         .choice =
         {
             filter_labels, filter_values,
-            3, 2,
+            4, 2,
         },
     },
     {

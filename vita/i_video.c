@@ -868,6 +868,11 @@ static void SetVideoMode(void)
         // This has to be done after the SDL renderer is created because that inits vita2d.
         shader = Vita_SetShader(VSH_SHARP_BILINEAR_SIMPLE);
     }
+    else if (!strcmp(scaling_filter, "scale2x"))
+    {
+        SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
+        shader = Vita_SetShader(VSH_SCALE2X);
+    }
     else
     {
         scaling_filter = "nearest";
