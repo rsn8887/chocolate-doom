@@ -730,11 +730,17 @@ static default_t extra_defaults_list[] =
 #ifdef __vita__
     //!
     // Texture filter using when scaling.
-    // "nearest", "linear" or "sharp"
+    // "nearest", "linear", "sharp" or "scale2x"
     //
 
     CONFIG_VARIABLE_STRING(scaling_filter),
 
+    //!
+    // If non-zero, translates right analog movements to mouse
+    // movements.
+    //
+
+    CONFIG_VARIABLE_INT(emulate_mouse),
 #endif
     //!
     // If non-zero, forces integer scales for resolution-independent rendering.

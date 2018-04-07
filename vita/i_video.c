@@ -163,6 +163,11 @@ static int startup_delay = 1000;
 static int grabmouse = true;
 static boolean nograbmouse_override = false;
 
+// If this is set to true. right analog movement is translated to mouse
+// movement.
+
+static int emulate_mouse = false;
+
 // The screen buffer; this is modified to draw things to the screen
 
 pixel_t *I_VideoBuffer = NULL;
@@ -220,25 +225,12 @@ void I_DisplayFPSDots(boolean dots_on)
     display_fps_dots = dots_on;
 }
 
-static void SetShowCursor(boolean show)
-{
-    if (!screensaver_mode)
-    {
-        // When the cursor is hidden, grab the input.
-        // Relative mode implicitly hides the cursor.
-        SDL_SetRelativeMouseMode(!show);
-        SDL_GetRelativeMouseState(NULL, NULL);
-    }
-}
 
 void I_ShutdownGraphics(void)
 {
     if (initialized)
     {
-        SetShowCursor(true);
-
         SDL_QuitSubSystem(SDL_INIT_VIDEO);
-
         initialized = false;
     }
 }
@@ -320,6 +312,37 @@ static void HandleWindowEvent(SDL_WindowEvent *event)
 
 extern void I_HandleKeyboardEvent(SDL_Event *sdlevent);
 extern void I_HandleMouseEvent(SDL_Event *sdlevent);
+
+// Mouse X and Y for mouse emulation.
+
+static int mouse_x = VITA_SCR_W / 2;
+static int mouse_y = VITA_SCR_H / 2;
+static int mouse_dx = 0;
+static int mouse_dy = 0;
+
+// Mouse offers more precise turning control, so we can translate the right
+// analog to mouse movements to achieve better control.
+
+static void TranslateAnalogEvent(SDL_Event *ev)
+{
+    static const int deadzone = 512;
+    static const int divider = 512;
+    int delta;
+
+    if (ev->jaxis.axis < 2)
+        return;
+
+    delta = ev->jaxis.value;
+    if (delta >= -deadzone && delta <= deadzone)
+        delta = 0;
+    else
+        delta /= divider;
+
+    if (ev->jaxis.axis == 2)
+        mouse_dx = delta;
+    else if (ev->jaxis.axis == 3)
+        mouse_dy = delta;
+}
 
 // No built-in touch support, so we translate mouse events to CTRL keypresses
 // as actual mouse control is not really needed, since we got analogs and dpad
@@ -474,6 +497,14 @@ void I_GetEvent(void)
                 TranslateControllerEvent(&sdlevent);
                 break;
 
+            // Translate analog to mouse, if emulate_mouse is enabled
+            case SDL_JOYAXISMOTION:
+                if (emulate_mouse)
+                {
+                    TranslateAnalogEvent(&sdlevent);
+                }
+                break;
+
             case SDL_QUIT:
                 if (screensaver_mode)
                 {
@@ -515,6 +546,8 @@ void I_StartTic (void)
     if (usemouse && !nomouse)
     {
         I_ReadMouse();
+        if (emulate_mouse && (mouse_dx || mouse_dy))
+            SDL_SendMouseMotion(screen, 0, true, mouse_dx, mouse_dy);
     }
 
     if (joywait < I_GetTime())
@@ -1017,7 +1050,13 @@ void I_InitGraphics(void)
     memset(I_VideoBuffer, 0, SCREENWIDTH * SCREENHEIGHT);
 
     // clear out any events waiting at the start and center the mouse
-  
+
+    if (emulate_mouse)
+    {
+        SDL_SetRelativeMouseMode(true);
+        SDL_GetRelativeMouseState(NULL, NULL);
+    }
+
     while (SDL_PollEvent(&dummy));
 
     initialized = true;
@@ -1050,4 +1089,5 @@ void I_BindVideoVariables(void)
     M_BindIntVariable("usegamma",                  &usegamma);
     M_BindIntVariable("png_screenshots",           &png_screenshots);
     M_BindStringVariable("scaling_filter",         &scaling_filter);
+    M_BindIntVariable("emulate_mouse",             &emulate_mouse);
 }

@@ -80,6 +80,18 @@ static struct Option input_opts[] =
         "joystick_look_invert", NULL,
         .boolean = 0,
     },
+    {
+        OPT_BOOLEAN,
+        "R Stick emulates mouse",
+        "emulate_mouse", NULL,
+        .boolean = 0,
+    },
+    {
+        OPT_BOOLEAN,
+        "No vertical mouse movement",
+        "novert", NULL,
+        .boolean = 0,
+    },
 };
 
 struct Menu ui_menu_input =
@@ -87,7 +99,7 @@ struct Menu ui_menu_input =
     MENU_INPUT,
     "Input",
     "Input settings",
-    input_opts, 6, 0, 0,
+    input_opts, 8, 0, 0,
     UI_MenuInput_Init,
     UI_MenuInput_Update,
     UI_MenuInput_Draw,
