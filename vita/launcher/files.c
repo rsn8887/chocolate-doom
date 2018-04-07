@@ -11,14 +11,23 @@ static char fs_error[4096];
 
 struct Game fs_games[GAME_COUNT] =
 {
+    // doom1-based
     { "Doom (Shareware)", "doom", "doom1.wad" },
     { "Doom", "doom", "doom.wad" },
+    { "FreeDM", "doom", "freedm.wad" },
+    { "FreeDoom: Phase 1", "doom", "freedoom1.wad" },
+    { "Chex Quest", "doom", "chex.wad" },
+    // doom2-based
     { "Doom II", "doom", "doom2.wad" },
     { "Final Doom: TNT Evilution", "doom", "tnt.wad" },
     { "Final Doom: The Plutonia Experiment", "doom", "plutonia.wad" },
+    { "FreeDoom: Phase 2", "doom", "freedoom2.wad" },
+    // heretic-based
     { "Heretic (Shareware)", "heretic", "heretic1.wad" },
     { "Heretic", "heretic", "heretic.wad" },
+    // hexen-based
     { "Hexen", "hexen", "hexen.wad" },
+    // strife-based
     { "Strife", "strife", "strife1.wad" },
 };
 

@@ -4,14 +4,23 @@
 
 enum Games
 {
+    // doom1-based
     GAME_DOOM_SW,
     GAME_DOOM,
+    GAME_FREEDM,
+    GAME_FREEDOOM,
+    GAME_CHEX,
+    // doom2-based
     GAME_DOOM2,
     GAME_TNT,
     GAME_PLUTONIA,
+    GAME_FREEDOOM2,
+    // heretic-based
     GAME_HERETIC_SW,
     GAME_HERETIC,
+    // hexen-based
     GAME_HEXEN,
+    // strife-based
     GAME_STRIFE,
 
     GAME_COUNT

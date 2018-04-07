@@ -125,6 +125,10 @@ static struct Config *game_to_cfg[GAME_COUNT][2] =
     { &cfgs[0][0], &cfgs[0][1] },
     { &cfgs[0][0], &cfgs[0][1] },
     { &cfgs[0][0], &cfgs[0][1] },
+    { &cfgs[0][0], &cfgs[0][1] },
+    { &cfgs[0][0], &cfgs[0][1] },
+    { &cfgs[0][0], &cfgs[0][1] },
+    { &cfgs[0][0], &cfgs[0][1] },
     // heretic
     { &cfgs[1][0], &cfgs[1][1] },
     { &cfgs[1][0], &cfgs[1][1] },
