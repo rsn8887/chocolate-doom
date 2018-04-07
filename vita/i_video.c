@@ -315,13 +315,16 @@ extern void I_HandleMouseEvent(SDL_Event *sdlevent);
 
 // Mouse X and Y for mouse emulation.
 
-static int mouse_x = VITA_SCR_W / 2;
-static int mouse_y = VITA_SCR_H / 2;
 static int mouse_dx = 0;
 static int mouse_dy = 0;
 
 // Mouse offers more precise turning control, so we can translate the right
 // analog to mouse movements to achieve better control.
+
+// We're using this private SDL function to send emulated mouse movements
+// because I'm too lazy to do it "properly".
+
+extern int SDL_SendMouseMotion(SDL_Window *window, Uint32 mouseID, int relative, int x, int y);
 
 static void TranslateAnalogEvent(SDL_Event *ev)
 {

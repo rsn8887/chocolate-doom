@@ -12,6 +12,8 @@ void UI_MenuInput_Draw(void);
 static const char *autorun_labels[] = { "Off", "On" };
 static const char *autorun_values[] = { "-1", "29" };
 
+static const char *novert_values[] = { "1", "0" };
+
 static const char *joy_axis_labels[] =
 {
     "Disabled",
@@ -87,10 +89,14 @@ static struct Option input_opts[] =
         .boolean = 0,
     },
     {
-        OPT_BOOLEAN,
-        "No vertical mouse movement",
+        OPT_CHOICE,
+        "Vertical mouse movement",
         "novert", NULL,
-        .boolean = 0,
+        .choice =
+        {
+            autorun_labels, novert_values,
+            2, 0,
+        },
     },
 };
 
