@@ -571,22 +571,22 @@ void I_UpdateNoBlit (void)
 // TODO: accelerate this
 static inline void BlitBuffer(void)
 {
-  SDL_Color c;
-  uint8_t *dst;
-  const uint8_t *src, *end;
+    SDL_Color c;
+    uint8_t *dst;
+    const uint8_t *src, *end;
 
-  src = screenbuffer->pixels;
-  dst = argbbuffer->pixels;
-  end = src + SCREENWIDTH * SCREENHEIGHT;
-  for (; src < end; ++src)
-  {
-    c = palette[*src];
-    // ABGR
-    *(dst++) = c.r;
-    *(dst++) = c.g;
-    *(dst++) = c.b;
-    *(dst++) = 255;
-  }
+    src = screenbuffer->pixels;
+    dst = argbbuffer->pixels;
+    end = src + SCREENWIDTH * SCREENHEIGHT;
+    for (; src < end; ++src)
+    {
+        c = palette[*src];
+        // ABGR
+        *(dst++) = c.r;
+        *(dst++) = c.g;
+        *(dst++) = c.b;
+        *(dst++) = 255;
+    }
 }
 
 //
