@@ -31,8 +31,8 @@ OBJS =\
 
 CFLAGS =\
 -mtune=cortex-a9 -mfpu=neon -mthumb                       \
--O2 -g                                                    \
--fsigned-char -fno-short-enums                            \
+-O3 -g                                                    \
+-fsigned-char -fno-short-enums -flto                      \
 -Wall -Wdeclaration-after-statement -Wredundant-decls     \
 -D_REENTRANT -DHAVE_CONFIG_H                              \
 -I. -I.. -I../../vita                                     \
