@@ -138,6 +138,24 @@ static void WriteResponseFile(int game, const char *fname)
 
     fprintf(f, "-iwad %s\n", g->iwad);
 
+    if (g->dehlump)
+        fprintf(f, "-dehlump\n");
+
+    int deh = 0;
+    for (int i = 0; i < MAX_DEHS; ++i)
+        if (g->dehs[i][0]) { deh = 1; break; }
+    if (deh)
+    {
+        fprintf(f, "-deh");
+        for (int i = 0; i < MAX_DEHS; ++i)
+            if (g->dehs[i][0])
+                fprintf(f, " %s", g->dehs[i]);
+        fprintf(f, "\n");
+    }
+
+    if (g->merge[0])
+        fprintf(f, "-merge %s\n", g->merge);
+
     int file = 0;
     for (int i = 0; i < MAX_PWADS; ++i)
         if (g->pwads[i][0]) { file = 1; break; }
@@ -154,21 +172,6 @@ static void WriteResponseFile(int game, const char *fname)
 
         fprintf(f, "\n");
     }
-
-    int deh = 0;
-    for (int i = 0; i < MAX_DEHS; ++i)
-        if (g->dehs[i][0]) { deh = 1; break; }
-    if (deh)
-    {
-        fprintf(f, "-deh");
-        for (int i = 0; i < MAX_DEHS; ++i)
-            if (g->dehs[i][0])
-                fprintf(f, " %s", g->dehs[i]);
-        fprintf(f, "\n");
-    }
-
-    if (g->merge[0])
-        fprintf(f, "-merge %s\n", g->merge);
 
     if (g->skill)
         fprintf(f, "-skill %d\n", g->skill);

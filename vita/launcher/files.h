@@ -46,6 +46,8 @@ struct Game
     char demo[MAX_FNAME];
     char rsp[MAX_FNAME];
     char merge[MAX_FNAME];
+
+    int dehlump;
     int skill;
     int warp;
     char monsters[2];

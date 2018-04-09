@@ -21,6 +21,7 @@ static struct Option pwads_opts[] =
     { OPT_FILE, "Merge file" },
     { OPT_FILE, "Demo" },
     { OPT_FILE, "Override response file" },
+    { OPT_BOOLEAN, "Load DEHACKED lumps" },
 };
 
 struct Menu ui_menu_pwads =
@@ -105,6 +106,8 @@ void UI_MenuFiles_Reload(void)
     pwads_opts[8].file.ext[0] = "rsp";
     pwads_opts[8].file.ext[1] = NULL;
 
+    pwads_opts[9].codevar = &fs_games[ui_game].dehlump;
+
     self->opts = pwads_opts;
-    self->numopts = 9;
+    self->numopts = 10;
 }
