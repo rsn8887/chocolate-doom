@@ -36,6 +36,7 @@ static struct Option pwads_opts[] =
     { OPT_BOOLEAN, "Record demo" },
     { OPT_INTEGER, "Skill", .inum = { 0, 5, 1, 0 } },
     { OPT_INTEGER, "Starting map", .inum = { 0, 99, 1, 0 } },
+    { OPT_FILE, "Custom response file" },
     // hexen only
     { 
         OPT_INTEGER,
@@ -116,8 +117,13 @@ void UI_MenuFiles_Reload(void)
     pwads_opts[8].codevar = &fs_games[ui_game].skill;
     pwads_opts[9].codevar = &fs_games[ui_game].warp;
 
-    pwads_opts[10].codevar = &fs_games[ui_game].charclass;
+    pwads_opts[10].codevar = fs_games[ui_game].rsp;
+    pwads_opts[10].file.dir = pwad_dirs[ui_game];
+    pwads_opts[10].file.ext[0] = "rsp";
+    pwads_opts[10].file.ext[1] = NULL;
+
+    pwads_opts[11].codevar = &fs_games[ui_game].charclass;
   
     self->opts = pwads_opts;
-    self->numopts = 10 + (ui_game == GAME_HEXEN);
+    self->numopts = 11 + (ui_game == GAME_HEXEN);
 }

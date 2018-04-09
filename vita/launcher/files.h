@@ -39,9 +39,10 @@ struct Game
     const char *iwad;
     int present;
 
-    char pwads[MAX_PWADS][256];
-    char deh[256];
-    char demo[256];
+    char pwads[MAX_PWADS][128];
+    char deh[128];
+    char demo[128];
+    char rsp[128];
     int skill;
     int warp;
     char monsters[2];

@@ -203,14 +203,22 @@ void FS_ExecGame(int game)
         fprintf(f, "-playdemo %s\n", g->demo);
     }
 
-    fclose(f);
+    fclose(f); // write the rsp even if g->rsp is set because I'm too lazy
 
+    static char rsp[256];
     static char exe[128];
+    static char *argv[3];
+
+    if (g->rsp[0])
+        snprintf(rsp, sizeof(rsp), "@" VITA_BASEDIR "/pwads/%s/%s",
+                 g->dir, g->rsp);
+    else
+        snprintf(rsp, sizeof(rsp), "@" VITA_TMPDIR "/chocolat.rsp");
+
     snprintf(exe, sizeof(exe), "app0:/%s.bin", g->dir);
 
-    static char *argv[3];
     argv[0] = exe;
-    argv[1] = "@" VITA_TMPDIR "/chocolat.rsp";
+    argv[1] = rsp;
     argv[2] = NULL;
 
     sceAppMgrLoadExec(exe, argv, NULL);
