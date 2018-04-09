@@ -1,6 +1,8 @@
 #pragma once
 
+#define MAX_FNAME 128
 #define MAX_PWADS 4
+#define MAX_DEHS  2
 
 enum Games
 {
@@ -39,10 +41,11 @@ struct Game
     const char *iwad;
     int present;
 
-    char pwads[MAX_PWADS][128];
-    char deh[128];
-    char demo[128];
-    char rsp[128];
+    char pwads[MAX_PWADS][MAX_FNAME];
+    char dehs[MAX_DEHS][MAX_FNAME];
+    char demo[MAX_FNAME];
+    char rsp[MAX_FNAME];
+    char merge[MAX_FNAME];
     int skill;
     int warp;
     char monsters[2];

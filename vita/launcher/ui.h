@@ -11,6 +11,7 @@ enum Menus
     MENU_INPUT,
     MENU_BINDS,
     MENU_PWADS,
+    MENU_MISC,
 
     MENU_COUNT
 };

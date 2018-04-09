@@ -17,6 +17,7 @@ extern struct Menu ui_menu_audio;
 extern struct Menu ui_menu_input;
 extern struct Menu ui_menu_binds;
 extern struct Menu ui_menu_pwads;
+extern struct Menu ui_menu_misc;
 
 static struct Menu *ui_menus[MENU_COUNT] =
 {
@@ -26,6 +27,7 @@ static struct Menu *ui_menus[MENU_COUNT] =
     &ui_menu_input,
     &ui_menu_binds,
     &ui_menu_pwads,
+    &ui_menu_misc,
 //  &ui_menu_net,
 };
 

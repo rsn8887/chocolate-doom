@@ -129,13 +129,11 @@ void FS_FreeFileList(struct FileList *flist)
     flist->numfiles = 0;
 }
 
-void FS_ExecGame(int game)
+static void WriteResponseFile(int game, const char *fname)
 {
-    if (game < 0 || game >= GAME_COUNT) return;
-
     struct Game *g = fs_games + game;
 
-    FILE *f = fopen(VITA_TMPDIR "/chocolat.rsp", "w");
+    FILE *f = fopen(fname, "w");
     if (!f) I_Error("Could not create file\n" VITA_TMPDIR "/chocolat.rsp");
 
     fprintf(f, "-iwad %s\n", g->iwad);
@@ -157,8 +155,20 @@ void FS_ExecGame(int game)
         fprintf(f, "\n");
     }
 
-    if (g->deh[0])
-        fprintf(f, "-deh %s\n", g->deh);
+    int deh = 0;
+    for (int i = 0; i < MAX_DEHS; ++i)
+        if (g->dehs[i][0]) { deh = 1; break; }
+    if (deh)
+    {
+        fprintf(f, "-deh");
+        for (int i = 0; i < MAX_DEHS; ++i)
+            if (g->dehs[i][0])
+                fprintf(f, " %s", g->dehs[i]);
+        fprintf(f, "\n");
+    }
+
+    if (g->merge[0])
+        fprintf(f, "-merge %s\n", g->merge);
 
     if (g->skill)
         fprintf(f, "-skill %d\n", g->skill);
@@ -203,17 +213,28 @@ void FS_ExecGame(int game)
         fprintf(f, "-playdemo %s\n", g->demo);
     }
 
-    fclose(f); // write the rsp even if g->rsp is set because I'm too lazy
+    fclose(f);
+}
 
+void FS_ExecGame(int game)
+{
+    if (game < 0 || game >= GAME_COUNT) return;
+
+    struct Game *g = fs_games + game;
     static char rsp[256];
     static char exe[128];
     static char *argv[3];
 
     if (g->rsp[0])
+    {
         snprintf(rsp, sizeof(rsp), "@" VITA_BASEDIR "/pwads/%s/%s",
                  g->dir, g->rsp);
+    }
     else
+    {
+        WriteResponseFile(game, VITA_TMPDIR "/chocolat.rsp");
         snprintf(rsp, sizeof(rsp), "@" VITA_TMPDIR "/chocolat.rsp");
+    }
 
     snprintf(exe, sizeof(exe), "app0:/%s.bin", g->dir);
 
