@@ -108,6 +108,6 @@
 #undef mkdir
 #define mkdir(path, mode) sceIoMkdir(path, mode)
 
-void vita_init(void);
+void Vita_Init(void);
 
 #endif

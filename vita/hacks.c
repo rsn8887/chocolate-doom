@@ -24,6 +24,8 @@
 
 #include "config.h"
 
+#define NET_INIT_SIZE (1 * 1024 * 1024)
+
 // increased heap size just in case
 
 unsigned int _newlib_heap_size_user = 128 * 1024 * 1024;
@@ -31,7 +33,36 @@ unsigned int _newlib_heap_size_user = 128 * 1024 * 1024;
 // vita-related initialization stuff
 // by the time this is executed myargc and myargv have already been set
 
-void vita_init(void)
+static void *net_memory = NULL;
+static int *net_errno = NULL;
+
+void Vita_InitNet(void)
+{
+    SceNetInitParam initparam;
+    int ret;
+
+    net_errno = sceNetErrnoLoc();
+
+    ret = sceNetShowNetstat();
+    if (ret == SCE_NET_ERROR_ENOTINIT)
+    {
+        net_memory = malloc(NET_INIT_SIZE);
+        initparam.memory = net_memory;
+        initparam.size = NET_INIT_SIZE;
+        initparam.flags = 0;
+        ret = sceNetInit(&initparam);
+        if (ret < 0) { free(net_memory); return; }
+    }
+
+    ret = sceNetCtlInit();
+    if (ret < 0)
+    {
+        sceNetTerm();
+        free(net_memory);
+    }
+}
+
+void Vita_Init(void)
 {
     sceAppUtilInit(&(SceAppUtilInitParam){}, &(SceAppUtilBootParam){});
     sceCommonDialogSetConfigParam(&(SceCommonDialogConfigParam){});
@@ -43,6 +74,8 @@ void vita_init(void)
 
     mkdir(VITA_BASEDIR, 0755);
     mkdir(VITA_TMPDIR, 0755);
+
+    Vita_InitNet();
 }
 
 // SDL2_net looks for these and uses them as rand() and srand()

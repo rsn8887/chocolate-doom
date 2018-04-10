@@ -42,7 +42,7 @@ int main(int argc, char **argv)
     myargv = argv;
 
 #ifdef __vita__
-    vita_init();
+    Vita_Init();
 #endif
 
     M_FindResponseFile();
