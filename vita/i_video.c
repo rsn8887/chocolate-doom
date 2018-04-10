@@ -57,6 +57,7 @@ static vita2d_shader *shader = NULL;
 // Vita2d texture for native rendering
 
 static vita2d_texture *vitatex_hwscreen = NULL;
+static uint8_t *vitatex_datap = NULL;
 
 // Window title
 
@@ -66,19 +67,24 @@ static char *window_title = "";
 
 static SDL_Surface *screenbuffer = NULL;
 
-static SDL_Rect blit_rect = {
+static SDL_Rect blit_rect =
+{
     0,
     0,
     SCREENWIDTH,
     SCREENHEIGHT
 };
 
-static SDL_Rect target_rect = {
+static SDL_Rect target_rect =
+{
     0,
     0,
     VITA_SCR_W,
     VITA_SCR_H
 };
+
+static float target_sx = 1.f;
+static float target_sy = 1.f;
 
 static uint32_t pixel_format;
 
@@ -575,7 +581,7 @@ static inline void BlitBuffer(void)
     const uint8_t *src, *end;
 
     src = screenbuffer->pixels;
-    dst = (uint8_t*) vita2d_texture_get_datap(vitatex_hwscreen);
+    dst = vitatex_datap;
     end = src + SCREENWIDTH * SCREENHEIGHT;
     for (; src < end; ++src)
     {
@@ -644,9 +650,11 @@ void I_FinishUpdate (void)
 
     // Native rendering, bypassing any SDL2 functions that might slow things down
     vita2d_start_drawing();
-    float sx = (float) target_rect.w / (float) blit_rect.w;
-    float sy = (float) target_rect.h / (float) blit_rect.h;
-    vita2d_draw_texture_scale(vitatex_hwscreen, target_rect.x, target_rect.y, sx, sy);
+    vita2d_draw_texture_scale(
+        vitatex_hwscreen,
+        target_rect.x, target_rect.y,
+        target_sx, target_sy
+    );
     vita2d_end_drawing();
     vita2d_swap_buffers();
 
@@ -815,10 +823,9 @@ void I_CheckIsScreensaver(void)
 
 static void SetVideoMode(void)
 {
+    SceGxmTextureFilter filter;
     int w, h;
     int x, y;
-    Uint32 rmask, gmask, bmask, amask;
-    int unused_bpp;
     int window_flags = 0, renderer_flags = 0;
     SDL_DisplayMode mode;
 
@@ -879,26 +886,30 @@ static void SetVideoMode(void)
     }
 
     vita2d_texture_set_alloc_memblock_type(SCE_KERNEL_MEMBLOCK_TYPE_USER_RW);
+    vita2d_set_vblank_wait(!!(renderer_flags & SDL_RENDERER_PRESENTVSYNC));
+
+    // Set up to render directly into a vita-native texture
+
+    if (vitatex_hwscreen)
+    {
+        vita2d_free_texture(vitatex_hwscreen);
+        vitatex_datap = NULL;
+    }
+
+    vitatex_hwscreen = vita2d_create_empty_texture_format(
+        SCREENWIDTH, SCREENHEIGHT,
+        SCE_GXM_TEXTURE_FORMAT_A8B8G8R8
+    );
+    vitatex_datap = vita2d_texture_get_datap(vitatex_hwscreen);
 
     // Set the scaling quality for rendering and immediate texture.
     // Defaults to "nearest", which is gritty and pixelated and resembles
     // software scaling pretty well.  "linear" can be set as an alternative,
     // which may give better results at low resolutions.
 
-    // set up to render directly into a vita-native texture
-    if (vitatex_hwscreen) {
-        vita2d_free_texture(vitatex_hwscreen);
-    }
-    if (renderer_flags & SDL_RENDERER_PRESENTVSYNC) {
-        vita2d_set_vblank_wait(true);
-    } else {
-        vita2d_set_vblank_wait(false);
-    }
-    vitatex_hwscreen = vita2d_create_empty_texture_format(SCREENWIDTH, SCREENHEIGHT, SCE_GXM_TEXTURE_FORMAT_A8B8G8R8);
-
     if (!strcmp(scaling_filter, "linear"))
     {
-        vita2d_texture_set_filters(vitatex_hwscreen, SCE_GXM_TEXTURE_FILTER_LINEAR, SCE_GXM_TEXTURE_FILTER_LINEAR);
+        filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
     }
     else if (!strcmp(scaling_filter, "sharp"))
     {
@@ -908,27 +919,28 @@ static void SetVideoMode(void)
         // Enable sharp-bilinear-simple shader for sharp pixels without distortion.
         // This has to be done after the SDL renderer is created because that inits vita2d.
         shader = Vita_SetShader(VSH_SHARP_BILINEAR_SIMPLE);
-        vita2d_texture_set_filters(vitatex_hwscreen, SCE_GXM_TEXTURE_FILTER_LINEAR, SCE_GXM_TEXTURE_FILTER_LINEAR);
+        filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
     }
     else if (!strcmp(scaling_filter, "scale2x"))
     {
         shader = Vita_SetShader(VSH_SCALE2X);
-        vita2d_texture_set_filters(vitatex_hwscreen, SCE_GXM_TEXTURE_FILTER_POINT, SCE_GXM_TEXTURE_FILTER_POINT);
+        filter = SCE_GXM_TEXTURE_FILTER_POINT;
     }
     else
     {
         scaling_filter = "nearest";
-        vita2d_texture_set_filters(vitatex_hwscreen, SCE_GXM_TEXTURE_FILTER_POINT, SCE_GXM_TEXTURE_FILTER_POINT);
+        filter = SCE_GXM_TEXTURE_FILTER_POINT;
     }
 
+    vita2d_texture_set_filters(vitatex_hwscreen, filter, filter);
+
     // erase the screen for both buffers
-    if (vitatex_hwscreen) {
-        for (int i = 0; i <= 3; i++) {
-            vita2d_start_drawing();
-            vita2d_clear_screen();
-            vita2d_end_drawing();
-            vita2d_swap_buffers();
-        }
+    for (int i = 0; i <= 3; i++)
+    {
+        vita2d_start_drawing();
+        vita2d_clear_screen();
+        vita2d_end_drawing();
+        vita2d_swap_buffers();
     }
 
     // Blank out the full screen area in case there is any junk in
@@ -949,6 +961,9 @@ static void SetVideoMode(void)
     }
 
     CalculateTargetRect();
+
+    target_sx = (float) target_rect.w / (float) blit_rect.w;
+    target_sy = (float) target_rect.h / (float) blit_rect.h;
 }
 
 static const char *hw_emu_warning = 
