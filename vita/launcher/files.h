@@ -47,6 +47,10 @@ struct Game
     char rsp[MAX_FNAME];
     char merge[MAX_FNAME];
 
+    char servername[MAX_FNAME];
+    char gmode[32];
+    char netmode[32];
+
     int dehlump;
     int skill;
     int warp;

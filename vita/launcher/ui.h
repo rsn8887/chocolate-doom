@@ -12,6 +12,7 @@ enum Menus
     MENU_BINDS,
     MENU_PWADS,
     MENU_MISC,
+    MENU_NET,
 
     MENU_COUNT
 };
@@ -24,6 +25,7 @@ enum OptionTypes
     OPT_DOUBLE,
     OPT_STRING,
     OPT_BUTTON,
+    OPT_CALLBACK,
     OPT_FILE,
 };
 
@@ -65,6 +67,8 @@ struct Option
         char string[MAX_STROPT];
 
         int button;
+
+        void (*cb)(int);
 
         struct
         {

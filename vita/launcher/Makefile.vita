@@ -6,7 +6,7 @@ LIBS =\
 
 CFILES :=\
 main.c ui.c screen.c input.c configs.c files.c utils.c \
-ui_main.c ui_video.c ui_audio.c ui_input.c ui_binds.c ui_pwads.c ui_misc.c
+ui_main.c ui_video.c ui_audio.c ui_input.c ui_binds.c ui_pwads.c ui_misc.c ui_net.c
 
 OBJS := $(CFILES:.c=.o)
 

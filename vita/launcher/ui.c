@@ -18,6 +18,7 @@ extern struct Menu ui_menu_input;
 extern struct Menu ui_menu_binds;
 extern struct Menu ui_menu_pwads;
 extern struct Menu ui_menu_misc;
+extern struct Menu ui_menu_net;
 
 static struct Menu *ui_menus[MENU_COUNT] =
 {
@@ -28,7 +29,7 @@ static struct Menu *ui_menus[MENU_COUNT] =
     &ui_menu_binds,
     &ui_menu_pwads,
     &ui_menu_misc,
-//  &ui_menu_net,
+    &ui_menu_net,
 };
 
 static int ui_tab_x[MENU_COUNT];
@@ -194,6 +195,10 @@ static void OptActivate(struct Option *opt)
             opt->file.ext,
             opt->file.val
         );
+    }
+    else if (opt->type == OPT_CALLBACK)
+    {
+        if (opt->cb) opt->cb(0);
     }
     else
     {
@@ -452,7 +457,7 @@ static void OptWriteVar(struct Option *opt)
             if (opt->codevar)
                 strcpy(opt->codevar, opt->string);
             else
-                CFG_WriteVar(ui_game, opt->cfgvar, &opt->string);
+                CFG_WriteVar(ui_game, opt->cfgvar, opt->string);
             break;
 
         case OPT_FILE:

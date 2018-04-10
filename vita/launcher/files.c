@@ -136,6 +136,18 @@ static void WriteResponseFile(int game, const char *fname)
     FILE *f = fopen(fname, "w");
     if (!f) I_Error("Could not create file\n" VITA_TMPDIR "/chocolat.rsp");
 
+    if (g->netmode[0])
+    {
+        fprintf(f, "-%s\n", g->netmode);
+        if (!strcmp(g->netmode, "server"))
+        {
+            if (g->servername[0])
+                fprintf(f, "-servername %s\n", g->servername);
+            if (g->gmode[0])
+                fprintf(f, "-%s\n", g->gmode);
+        }
+    }
+
     fprintf(f, "-iwad %s\n", g->iwad);
 
     if (g->dehlump)
