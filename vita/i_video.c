@@ -54,18 +54,17 @@ static SDL_Renderer *renderer;
 
 static vita2d_shader *shader = NULL;
 
+// Vita2d texture for native rendering
+
+static vita2d_texture *vitatex_hwscreen = NULL;
+
 // Window title
 
 static char *window_title = "";
 
-// These are (1) the 320x200x8 paletted buffer that we draw to (i.e. the one
-// that holds I_VideoBuffer), (2) the 320x200x32 RGBA intermediate buffer that
-// we blit the former buffer to, (3) the intermediate 320x200 texture that we
-// load the RGBA buffer to and that we render onto the screen.
+// This is the 320x200x8 paletted buffer that we draw to
 
 static SDL_Surface *screenbuffer = NULL;
-static SDL_Surface *argbbuffer = NULL;
-static SDL_Texture *texture = NULL;
 
 static SDL_Rect blit_rect = {
     0,
@@ -576,7 +575,7 @@ static inline void BlitBuffer(void)
     const uint8_t *src, *end;
 
     src = screenbuffer->pixels;
-    dst = argbbuffer->pixels;
+    dst = (uint8_t*) vita2d_texture_get_datap(vitatex_hwscreen);
     end = src + SCREENWIDTH * SCREENHEIGHT;
     for (; src < end; ++src)
     {
@@ -640,23 +639,16 @@ void I_FinishUpdate (void)
     // 32-bit RGBA buffer that we can load into the texture.
 
     // Have to blit manually here because it seems LowerBlit is bugged on Vita.
+    // Blitting is done directly to native texture
     BlitBuffer();
 
-    // Update the intermediate texture with the contents of the RGBA buffer.
-
-    SDL_UpdateTexture(texture, NULL, argbbuffer->pixels, argbbuffer->pitch);
-
-    // Make sure the pillarboxes are kept clear each frame.
-
-    SDL_RenderClear(renderer);
-
-    // Just render the intermediate texture onto the screen, upscaling it.
-
-    SDL_RenderCopy(renderer, texture, &blit_rect, &target_rect);
-
-    // Draw!
-
-    SDL_RenderPresent(renderer);
+    // Native rendering, bypassing any SDL2 functions that might slow things down
+    vita2d_start_drawing();
+    float sx = (float) target_rect.w / (float) blit_rect.w;
+    float sy = (float) target_rect.h / (float) blit_rect.h;
+    vita2d_draw_texture_scale(vitatex_hwscreen, target_rect.x, target_rect.y, sx, sy);
+    vita2d_end_drawing();
+    vita2d_swap_buffers();
 
     // Restore background and undo the disk indicator, if it was drawn.
     V_RestoreDiskBackground();
@@ -893,29 +885,50 @@ static void SetVideoMode(void)
     // software scaling pretty well.  "linear" can be set as an alternative,
     // which may give better results at low resolutions.
 
+    // set up to render directly into a vita-native texture
+    if (vitatex_hwscreen) {
+        vita2d_free_texture(vitatex_hwscreen);
+    }
+    if (renderer_flags & SDL_RENDERER_PRESENTVSYNC) {
+        vita2d_set_vblank_wait(true);
+    } else {
+        vita2d_set_vblank_wait(false);
+    }
+    vitatex_hwscreen = vita2d_create_empty_texture_format(SCREENWIDTH, SCREENHEIGHT, SCE_GXM_TEXTURE_FORMAT_A8B8G8R8);
+
     if (!strcmp(scaling_filter, "linear"))
     {
-        SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
+        vita2d_texture_set_filters(vitatex_hwscreen, SCE_GXM_TEXTURE_FILTER_LINEAR, SCE_GXM_TEXTURE_FILTER_LINEAR);
     }
     else if (!strcmp(scaling_filter, "sharp"))
     {
         // For the sharp_bilinear_simple shader to work, linear filtering has to be enabled.
         // This is done by a simple command here, supported by SDL2 for Vita since 2017/12/24.
         // This affects all textures created after this command.
-        SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
         // Enable sharp-bilinear-simple shader for sharp pixels without distortion.
         // This has to be done after the SDL renderer is created because that inits vita2d.
         shader = Vita_SetShader(VSH_SHARP_BILINEAR_SIMPLE);
+        vita2d_texture_set_filters(vitatex_hwscreen, SCE_GXM_TEXTURE_FILTER_LINEAR, SCE_GXM_TEXTURE_FILTER_LINEAR);
     }
     else if (!strcmp(scaling_filter, "scale2x"))
     {
-        SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
         shader = Vita_SetShader(VSH_SCALE2X);
+        vita2d_texture_set_filters(vitatex_hwscreen, SCE_GXM_TEXTURE_FILTER_POINT, SCE_GXM_TEXTURE_FILTER_POINT);
     }
     else
     {
         scaling_filter = "nearest";
-        SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
+        vita2d_texture_set_filters(vitatex_hwscreen, SCE_GXM_TEXTURE_FILTER_POINT, SCE_GXM_TEXTURE_FILTER_POINT);
+    }
+
+    // erase the screen for both buffers
+    if (vitatex_hwscreen) {
+        for (int i = 0; i <= 3; i++) {
+            vita2d_start_drawing();
+            vita2d_clear_screen();
+            vita2d_end_drawing();
+            vita2d_swap_buffers();
+        }
     }
 
     // Blank out the full screen area in case there is any junk in
@@ -925,7 +938,7 @@ static void SetVideoMode(void)
     SDL_RenderClear(renderer);
     SDL_RenderPresent(renderer);
 
-    // Create the 8-bit paletted and the 32-bit RGBA screenbuffer surfaces.
+    // Create the 8-bit paletted screenbuffer surface.
 
     if (screenbuffer == NULL)
     {
@@ -934,35 +947,6 @@ static void SetVideoMode(void)
                                             0, 0, 0, 0);
         SDL_FillRect(screenbuffer, NULL, 0);
     }
-
-    // Format of argbbuffer must match the screen pixel format because we
-    // import the surface data into the texture.
-    if (argbbuffer == NULL)
-    {
-        SDL_PixelFormatEnumToMasks(pixel_format, &unused_bpp,
-                                   &rmask, &gmask, &bmask, &amask);
-        argbbuffer = SDL_CreateRGBSurface(0,
-                                          SCREENWIDTH, SCREENHEIGHT, 32,
-                                          rmask, gmask, bmask, amask);
-        SDL_FillRect(argbbuffer, NULL, 0);
-    }
-
-    if (texture != NULL)
-    {
-        SDL_DestroyTexture(texture);
-    }
-
-    // Create the intermediate texture that the RGBA surface gets loaded into.
-    // The SDL_TEXTUREACCESS_STREAMING flag means that this texture's content
-    // is going to change frequently.
-
-    texture = SDL_CreateTexture(renderer,
-                                pixel_format,
-                                SDL_TEXTUREACCESS_STREAMING,
-                                SCREENWIDTH, SCREENHEIGHT);
-
-    if (!texture) 
-        I_Error("Error creating screen texture: %s", SDL_GetError());
 
     CalculateTargetRect();
 }
