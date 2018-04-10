@@ -46,9 +46,11 @@
 
 // These are (1) the window (or the full screen) that our game is rendered to
 // and (2) the renderer that scales the texture (see below) into this window.
+// These are also used in libtextscreen because the SDL port can't handle
+// reinit.
 
-static SDL_Window *screen;
-static SDL_Renderer *renderer;
+SDL_Window *sdl_window;
+SDL_Renderer *sdl_renderer;
 
 // Current vita2d shader, used for sharp bilinear filtering
 
@@ -235,7 +237,15 @@ void I_ShutdownGraphics(void)
 {
     if (initialized)
     {
+        vita2d_free_texture(vitatex_hwscreen);
+        vitatex_hwscreen = NULL;
+        vitatex_datap = NULL;
+        // TODO: move deinit somewhere else to make ENDOOM work properly
+        SDL_DestroyRenderer(sdl_renderer);
+        SDL_DestroyWindow(sdl_window);
         SDL_QuitSubSystem(SDL_INIT_VIDEO);
+        sdl_window = NULL;
+        sdl_renderer = NULL;
         initialized = false;
     }
 }
@@ -303,7 +313,7 @@ static void HandleWindowEvent(SDL_WindowEvent *event)
         // update the video_display config variable.
 
         case SDL_WINDOWEVENT_MOVED:
-            i = SDL_GetWindowDisplayIndex(screen);
+            i = SDL_GetWindowDisplayIndex(sdl_window);
             if (i >= 0)
             {
                 video_display = i;
@@ -527,7 +537,7 @@ void I_GetEvent(void)
                 break;
 
             case SDL_WINDOWEVENT:
-                if (sdlevent.window.windowID == SDL_GetWindowID(screen))
+                if (sdlevent.window.windowID == SDL_GetWindowID(sdl_window))
                 {
                     HandleWindowEvent(&sdlevent.window);
                 }
@@ -555,7 +565,7 @@ void I_StartTic (void)
     {
         I_ReadMouse();
         if (emulate_mouse && (mouse_dx || mouse_dy))
-            SDL_SendMouseMotion(screen, 0, true, mouse_dx, mouse_dy);
+            SDL_SendMouseMotion(sdl_window, 0, true, mouse_dx, mouse_dy);
     }
 
     if (joywait < I_GetTime())
@@ -636,8 +646,10 @@ void I_FinishUpdate (void)
         {
             // "flash" the pillars/letterboxes with palette changes, emulating
             // VGA "porch" behaviour (GitHub issue #832)
-            SDL_SetRenderDrawColor(renderer, palette[0].r, palette[0].g,
+            SDL_SetRenderDrawColor(sdl_renderer, palette[0].r, palette[0].g,
                 palette[0].b, SDL_ALPHA_OPAQUE);
+            vita2d_set_clear_color(RGBA8(palette[0].r, palette[0].g,
+                palette[0].b, 255));
         }
     }
 
@@ -650,6 +662,7 @@ void I_FinishUpdate (void)
 
     // Native rendering, bypassing any SDL2 functions that might slow things down
     vita2d_start_drawing();
+    if (vga_porch_flash) vita2d_clear_screen();
     vita2d_draw_texture_scale(
         vitatex_hwscreen,
         target_rect.x, target_rect.y,
@@ -838,11 +851,11 @@ static void SetVideoMode(void)
     x = SDL_WINDOWPOS_UNDEFINED;
     y = SDL_WINDOWPOS_UNDEFINED;
 
-    if (screen == NULL)
+    if (sdl_window == NULL)
     {
-        screen = SDL_CreateWindow(NULL, x, y, w, h, window_flags);
+        sdl_window = SDL_CreateWindow(NULL, x, y, w, h, window_flags);
 
-        if (screen == NULL)
+        if (sdl_window == NULL)
         {
             I_Error("Error creating window for video startup: %s",
             SDL_GetError());
@@ -866,23 +879,15 @@ static void SetVideoMode(void)
         renderer_flags |= SDL_RENDERER_PRESENTVSYNC;
     }
 
-    if (force_software_renderer)
+    if (sdl_renderer == NULL)
     {
-        renderer_flags |= SDL_RENDERER_SOFTWARE;
-        renderer_flags &= ~SDL_RENDERER_PRESENTVSYNC;
-    }
+        sdl_renderer = SDL_CreateRenderer(sdl_window, -1, renderer_flags);
 
-    if (renderer != NULL)
-    {
-        SDL_DestroyRenderer(renderer);
-    }
-
-    renderer = SDL_CreateRenderer(screen, -1, renderer_flags);
-
-    if (renderer == NULL)
-    {
-        I_Error("Error creating renderer for screen window: %s",
-                SDL_GetError());
+        if (sdl_renderer == NULL)
+        {
+            I_Error("Error creating renderer for screen window: %s",
+                    SDL_GetError());
+        }
     }
 
     vita2d_texture_set_alloc_memblock_type(SCE_KERNEL_MEMBLOCK_TYPE_USER_RW);
@@ -937,18 +942,12 @@ static void SetVideoMode(void)
     // erase the screen for both buffers
     for (int i = 0; i <= 3; i++)
     {
+        vita2d_set_clear_color(RGBA8(0, 0, 0, 255));
         vita2d_start_drawing();
         vita2d_clear_screen();
         vita2d_end_drawing();
         vita2d_swap_buffers();
     }
-
-    // Blank out the full screen area in case there is any junk in
-    // the borders that won't otherwise be overwritten.
-
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    SDL_RenderClear(renderer);
-    SDL_RenderPresent(renderer);
 
     // Create the 8-bit paletted screenbuffer surface.
 

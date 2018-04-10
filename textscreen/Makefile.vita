@@ -15,7 +15,7 @@ OBJS=\
 	txt_button.o txt_label.o \
 	txt_radiobutton.o txt_scrollpane.o \
 	txt_separator.o txt_spinctrl.o \
-	txt_sdl.o txt_strut.o txt_table.o \
+	../vita/txt_sdl.o txt_strut.o txt_table.o \
 	txt_utf8.o txt_widget.o txt_window.o \
 	txt_window_action.o
 
