@@ -48,6 +48,7 @@ struct Game
     char merge[MAX_FNAME];
 
     char servername[MAX_FNAME];
+    char joinaddr[MAX_FNAME];
     char gmode[32];
     char netmode[32];
 

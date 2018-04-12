@@ -31,10 +31,13 @@ static const char *mode_values[] =
 static struct Option net_opts[] =
 {
     { OPT_STRING, "Player name", "player_name" },
+    { OPT_STRING, "Game address" },
+    { OPT_CALLBACK, "Connect to address", .cb = DoJoinNet },
+    { OPT_CALLBACK, "Autojoin local game", .cb = DoJoinAuto },
     { OPT_STRING, "Server name" },
     {
         OPT_CHOICE,
-        "Game mode",
+        "Server game mode",
         NULL, NULL,
         .choice =
         {
@@ -42,9 +45,6 @@ static struct Option net_opts[] =
             3, 0,
         },
     },
-    { OPT_CALLBACK, "Join Internet game", .cb = DoJoinNet },
-    { OPT_CALLBACK, "Join local game", .cb = DoJoinLocal },
-    { OPT_CALLBACK, "Autojoin local game", .cb = DoJoinAuto },
     { OPT_CALLBACK, "Host game", .cb = DoHost },
 };
 
@@ -53,7 +53,7 @@ struct Menu ui_menu_net =
     MENU_PWADS,
     "Net",
     "Network game settings",
-    NULL, 0, 0, 0,
+    net_opts, 1, 0, 0,
     UI_MenuNet_Init,
     UI_MenuNet_Update,
     UI_MenuNet_Draw,
@@ -65,6 +65,10 @@ static struct Menu *self = &ui_menu_net;
 void UI_MenuNet_Init(void)
 {
     UI_MenuNet_Reload();
+    // HACK: dynamic vars don't get loaded properly for Doom because it's
+    //       selected on start, so got to do this stupid shit
+    strncpy(net_opts[1].string, fs_games[ui_game].joinaddr, MAX_STROPT);
+    strncpy(net_opts[4].string, fs_games[ui_game].servername, MAX_STROPT);
 }
 
 void UI_MenuNet_Update(void)
@@ -79,8 +83,10 @@ void UI_MenuNet_Draw(void)
 
 void UI_MenuNet_Reload(void)
 {
-    net_opts[1].codevar = fs_games[ui_game].servername;
-    net_opts[2].codevar = fs_games[ui_game].gmode;
+    net_opts[1].codevar = fs_games[ui_game].joinaddr;
+    net_opts[4].codevar = fs_games[ui_game].servername;
+    net_opts[5].codevar = fs_games[ui_game].gmode;
+    net_opts[5].choice.count = (ui_game < GAME_HERETIC_SW) ? 3 : 2;
 
     self->opts = net_opts;
     self->numopts = 7;
@@ -96,12 +102,7 @@ static void NetStart(const char *mode)
 
 static void DoJoinNet(int arg)
 {
-    NetStart("search");
-}
-
-static void DoJoinLocal(int arg)
-{
-    NetStart("localsearch");
+    NetStart("connect");
 }
 
 static void DoJoinAuto(int arg)

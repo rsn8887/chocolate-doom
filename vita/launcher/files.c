@@ -60,6 +60,9 @@ int FS_Init(void)
         int present = CheckForGame(i);
         fs_games[i].present = present;
         fs_games[i].monsters[0] = '0';
+        snprintf(fs_games[i].servername, MAX_FNAME, "Vita Server (%s)",
+            fs_games[i].iwad);
+        strncpy(fs_games[i].joinaddr, "0.0.0.0:2342", MAX_FNAME);
         numgames += present;
     }
 
@@ -138,13 +141,20 @@ static void WriteResponseFile(int game, const char *fname)
 
     if (g->netmode[0])
     {
-        fprintf(f, "-%s\n", g->netmode);
-        if (!strcmp(g->netmode, "server"))
+        if (!strcmp(g->netmode, "connect"))
         {
-            if (g->servername[0])
-                fprintf(f, "-servername %s\n", g->servername);
-            if (g->gmode[0])
-                fprintf(f, "-%s\n", g->gmode);
+            fprintf(f, "-connect %s\n", g->joinaddr);
+        }
+        else
+        {
+            fprintf(f, "-%s\n", g->netmode);
+            if (!strcmp(g->netmode, "server"))
+            {
+                if (g->servername[0])
+                    fprintf(f, "-servername %s\n", g->servername);
+                if (g->gmode[0])
+                    fprintf(f, "-%s\n", g->gmode);
+            }
         }
     }
 
