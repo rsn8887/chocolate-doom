@@ -14,6 +14,9 @@ static int drawing = 0;
 
 int R_Init(void)
 {
+    sceAppUtilInit(&(SceAppUtilInitParam){}, &(SceAppUtilBootParam){});
+    sceCommonDialogSetConfigParam(&(SceCommonDialogConfigParam){});
+
     vita2d_init();
     vita2d_set_clear_color(C_BLACK);
 
@@ -51,6 +54,8 @@ void R_EndDrawing(void)
     if (drawing)
     {
         vita2d_end_drawing();
+        vita2d_common_dialog_update();
+        vita2d_wait_rendering_done();
         vita2d_swap_buffers();
         drawing = 0;
     }
