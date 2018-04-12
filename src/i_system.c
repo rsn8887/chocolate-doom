@@ -230,6 +230,10 @@ void I_BindVariables(void)
 }
 */
 
+#ifdef __vita__
+extern void I_VitaCleanupGraphics(void);
+#endif
+
 //
 // I_Quit
 //
@@ -248,6 +252,9 @@ void I_Quit (void)
         entry = entry->next;
     }
 
+#ifdef __vita__
+    I_VitaCleanupGraphics();
+#endif
     SDL_Quit();
 
     exit(0);
@@ -340,6 +347,9 @@ void I_Error (const char *error, ...)
 
     // abort();
 
+#ifdef __vita__
+    I_VitaCleanupGraphics();
+#endif
     SDL_Quit();
 
     exit(-1);

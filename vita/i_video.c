@@ -232,20 +232,30 @@ void I_DisplayFPSDots(boolean dots_on)
     display_fps_dots = dots_on;
 }
 
+// This should be called right before SDL_Quit() before the program exits.
+// Vita SDL2 can't handle being reinitialized, so I put a shitton of hacks
+// everywhere to make it use the same renderer and window in both i_video.c
+// and txt_sdl.c, so the only point where we need to destroy them is the
+// very end.
+
+void I_VitaCleanupGraphics(void)
+{
+    vita2d_wait_rendering_done();
+    SDL_DestroyRenderer(sdl_renderer);
+    SDL_DestroyWindow(sdl_window);
+    vita2d_free_texture(vitatex_hwscreen);
+    vitatex_hwscreen = NULL;
+    vitatex_datap = NULL;
+    sdl_window = NULL;
+    sdl_renderer = NULL;
+}
 
 void I_ShutdownGraphics(void)
 {
     if (initialized)
     {
-        vita2d_free_texture(vitatex_hwscreen);
-        vitatex_hwscreen = NULL;
-        vitatex_datap = NULL;
-        // TODO: move deinit somewhere else to make ENDOOM work properly
-        SDL_DestroyRenderer(sdl_renderer);
-        SDL_DestroyWindow(sdl_window);
-        SDL_QuitSubSystem(SDL_INIT_VIDEO);
-        sdl_window = NULL;
-        sdl_renderer = NULL;
+        vita2d_wait_rendering_done();
+        // don't deinit SDL here, makes shit crash
         initialized = false;
     }
 }
@@ -834,53 +844,52 @@ void I_CheckIsScreensaver(void)
     screensaver_mode = false;
 }
 
-static void SetVideoMode(void)
+// This is also used in txt_sdl.c.
+
+void I_VitaInitSDLWindow(void)
 {
-    SceGxmTextureFilter filter;
-    int w, h;
-    int x, y;
-    int window_flags = 0, renderer_flags = 0;
+    int x, y, w, h, renderer_flags;
     SDL_DisplayMode mode;
 
-    w = window_width = VITA_SCR_W;
-    h = window_height = VITA_SCR_H;
-
-    window_flags = SDL_WINDOW_SHOWN;
-    fullscreen = true;
-
-    x = SDL_WINDOWPOS_UNDEFINED;
-    y = SDL_WINDOWPOS_UNDEFINED;
+    if (!SDL_WasInit(SDL_INIT_VIDEO))
+    {
+        if (SDL_Init(SDL_INIT_VIDEO) < 0)
+        {
+            I_Error("Failed to initialize video: %s", SDL_GetError());
+        }
+    }
 
     if (sdl_window == NULL)
     {
-        sdl_window = SDL_CreateWindow(NULL, x, y, w, h, window_flags);
+        w = VITA_SCR_W;
+        h = VITA_SCR_H;
+        x = SDL_WINDOWPOS_UNDEFINED;
+        y = SDL_WINDOWPOS_UNDEFINED;
+
+        sdl_window = SDL_CreateWindow(NULL, x, y, w, h, SDL_WINDOW_SHOWN);
 
         if (sdl_window == NULL)
         {
             I_Error("Error creating window for video startup: %s",
-            SDL_GetError());
+                SDL_GetError());
         }
-
-        pixel_format = SDL_PIXELFORMAT_ABGR8888;
     }
-
-    // We don't use render-to-texture on the vita
-    renderer_flags = 0;
 
     if (SDL_GetCurrentDisplayMode(video_display, &mode) != 0)
     {
         I_Error("Could not get display mode for video display #%d: %s",
-        video_display, SDL_GetError());
-    }
-
-    // Turn on vsync if we aren't in a -timedemo
-    if (!singletics && mode.refresh_rate > 0)
-    {
-        renderer_flags |= SDL_RENDERER_PRESENTVSYNC;
+            video_display, SDL_GetError());
     }
 
     if (sdl_renderer == NULL)
     {
+        renderer_flags = 0;
+        // Turn on vsync if we aren't in a -timedemo
+        if (!singletics && mode.refresh_rate > 0)
+        {
+            renderer_flags |= SDL_RENDERER_PRESENTVSYNC;
+        }
+
         sdl_renderer = SDL_CreateRenderer(sdl_window, -1, renderer_flags);
 
         if (sdl_renderer == NULL)
@@ -888,24 +897,36 @@ static void SetVideoMode(void)
             I_Error("Error creating renderer for screen window: %s",
                     SDL_GetError());
         }
-    }
 
-    vita2d_texture_set_alloc_memblock_type(SCE_KERNEL_MEMBLOCK_TYPE_USER_RW);
-    vita2d_set_vblank_wait(!!(renderer_flags & SDL_RENDERER_PRESENTVSYNC));
+        vita2d_texture_set_alloc_memblock_type(SCE_KERNEL_MEMBLOCK_TYPE_USER_RW);
+        vita2d_set_vblank_wait(!!(renderer_flags & SDL_RENDERER_PRESENTVSYNC));
+        vita2d_set_clear_color(RGBA8(0, 0, 0, 255));
+    }
+}
+
+static void SetVideoMode(void)
+{
+    SceGxmTextureFilter filter;
+
+    window_width = VITA_SCR_W;
+    window_height = VITA_SCR_H;
+    pixel_format = SDL_PIXELFORMAT_ABGR8888;
+
+    if (!sdl_renderer || !sdl_window)
+    {
+        I_VitaInitSDLWindow();
+    }
 
     // Set up to render directly into a vita-native texture
 
-    if (vitatex_hwscreen)
+    if (!vitatex_hwscreen)
     {
-        vita2d_free_texture(vitatex_hwscreen);
-        vitatex_datap = NULL;
+        vitatex_hwscreen = vita2d_create_empty_texture_format(
+            SCREENWIDTH, SCREENHEIGHT,
+            SCE_GXM_TEXTURE_FORMAT_A8B8G8R8
+        );
+        vitatex_datap = vita2d_texture_get_datap(vitatex_hwscreen);
     }
-
-    vitatex_hwscreen = vita2d_create_empty_texture_format(
-        SCREENWIDTH, SCREENHEIGHT,
-        SCE_GXM_TEXTURE_FORMAT_A8B8G8R8
-    );
-    vitatex_datap = vita2d_texture_get_datap(vitatex_hwscreen);
 
     // Set the scaling quality for rendering and immediate texture.
     // Defaults to "nearest", which is gritty and pixelated and resembles
@@ -942,7 +963,6 @@ static void SetVideoMode(void)
     // erase the screen for both buffers
     for (int i = 0; i <= 3; i++)
     {
-        vita2d_set_clear_color(RGBA8(0, 0, 0, 255));
         vita2d_start_drawing();
         vita2d_clear_screen();
         vita2d_end_drawing();
@@ -993,11 +1013,6 @@ void I_InitGraphics(void)
 {
     SDL_Event dummy;
     byte *doompal;
-
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) 
-    {
-        I_Error("Failed to initialize video: %s", SDL_GetError());
-    }
 
     fullscreen = true;
 

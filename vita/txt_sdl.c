@@ -55,7 +55,8 @@ typedef struct
 
 #define BLINK_PERIOD 250
 
-// HACK: the SDL2 port can't handle being reinitialized
+// HACK: the SDL2 port can't handle being reinitialized, so we hijack
+//       the window and renderer from i_video.c
 extern SDL_Window *sdl_window;
 extern SDL_Renderer *sdl_renderer;
 
@@ -117,120 +118,11 @@ static SDL_Color ega_colors[] =
     {0xfe, 0xfe, 0xfe, 0xff},          // 15: Bright white
 };
 
-#ifdef _WIN32
+// This is defined in i_video.c and provides a centralized way of
+// creating a single window and renderer pair for both text mode and
+// graphics.
 
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-
-// Examine system DPI settings to determine whether to use the large font.
-
-static int Win32_UseLargeFont(void)
-{
-    HDC hdc = GetDC(NULL);
-    int dpix;
-
-    if (!hdc)
-    {
-        return 0;
-    }
-
-    dpix = GetDeviceCaps(hdc, LOGPIXELSX);
-    ReleaseDC(NULL, hdc);
-
-    // 144 is the DPI when using "150%" scaling. If the user has this set
-    // then consider this an appropriate threshold for using the large font.
-
-    return dpix >= 144;
-}
-
-#endif
-
-static const txt_font_t *FontForName(const char *name)
-{
-    int i;
-    const txt_font_t *fonts[] =
-    {
-        &small_font,
-        &normal_font,
-        &large_font,
-        &highdpi_font,
-        NULL,
-    };
-
-    for (i = 0; fonts[i]->name != NULL; ++i)
-    {
-        if (!strcmp(fonts[i]->name, name))
-        {
-            return fonts[i];
-        }
-    }
-    return NULL;
-}
-
-//
-// Select the font to use, based on screen resolution
-//
-// If the highest screen resolution available is less than
-// 640x480, use the small font.
-//
-
-static void ChooseFont(void)
-{
-    SDL_DisplayMode desktop_info;
-    char *env;
-
-    // Allow normal selection to be overridden from an environment variable:
-    env = getenv("TEXTSCREEN_FONT");
-    if (env != NULL)
-    {
-        font = FontForName(env);
-
-        if (font != NULL)
-        {
-            return;
-        }
-    }
-
-    // Get desktop resolution.
-    // If in doubt and we can't get a list, always prefer to
-    // fall back to the normal font:
-    if (SDL_GetCurrentDisplayMode(0, &desktop_info))
-    {
-        font = &highdpi_font;
-        return;
-    }
-
-    // On tiny low-res screens (eg. palmtops) use the small font.
-    // If the screen resolution is at least 1920x1080, this is
-    // a modern high-resolution display, and we can use the
-    // large font.
-
-    if (desktop_info.w < 640 || desktop_info.h < 480)
-    {
-        font = &small_font;
-    }
-#ifdef _WIN32
-    // On Windows we can use the system DPI settings to make a
-    // more educated guess about whether to use the large font.
-
-    else if (Win32_UseLargeFont())
-    {
-        font = &large_font;
-    }
-#endif
-    // TODO: Detect high DPI on Linux by inquiring about Gtk+ scale
-    // settings. This looks like it should just be a case of shelling
-    // out to invoke the 'gsettings' command, eg.
-    //   gsettings get org.gnome.desktop.interface text-scaling-factor
-    // and using large_font if the result is >= 2.
-    else
-    {
-        // highdpi_font usually means normal_font (the normal resolution
-        // version), but actually means "set the HIGHDPI flag and try
-        // to use large_font if we initialize successfully".
-        font = &highdpi_font;
-    }
-}
+extern void I_VitaInitSDLWindow(void);
 
 //
 // Initialize text mode screen
@@ -240,73 +132,21 @@ static void ChooseFont(void)
 
 int TXT_Init(void)
 {
-    int flags = 0;
-
-    if (SDL_Init(SDL_INIT_VIDEO) < 0)
-    {
-        return 0;
-    }
-
-    ChooseFont();
+    font = &normal_font;
 
     screen_image_w = TXT_SCREEN_W * font->w;
     screen_image_h = TXT_SCREEN_H * font->h;
 
-    // If highdpi_font is selected, try to initialize high dpi rendering.
-    if (font == &highdpi_font)
+    if (!sdl_window || !sdl_renderer)
     {
-        flags |= SDL_WINDOW_ALLOW_HIGHDPI;
+        I_VitaInitSDLWindow();
     }
 
-    if (sdl_window)
-    {
-        TXT_SDLWindow = sdl_window;
-    }
-    else
-    {
-        sdl_window = TXT_SDLWindow =
-            SDL_CreateWindow("", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                             screen_image_w, screen_image_h, flags);
-    }
+    TXT_SDLWindow = sdl_window;
+    renderer = sdl_renderer;
 
     if (TXT_SDLWindow == NULL)
         return 0;
-
-    if (sdl_renderer)
-    {
-        renderer = sdl_renderer;
-    }
-    else
-    {
-        flags = SDL_RENDERER_PRESENTVSYNC;
-        sdl_renderer = renderer = SDL_CreateRenderer(TXT_SDLWindow, -1, flags);
-    }
-
-    // Special handling for OS X retina display. If we successfully set the
-    // highdpi flag, check the output size for the screen renderer. If we get
-    // the 2x doubled size we expect from a retina display, use the large font
-    // for drawing the screen.
-    if ((SDL_GetWindowFlags(TXT_SDLWindow) & SDL_WINDOW_ALLOW_HIGHDPI) != 0)
-    {
-        int render_w, render_h;
-
-        if (SDL_GetRendererOutputSize(renderer, &render_w, &render_h) == 0
-         && render_w >= TXT_SCREEN_W * large_font.w
-         && render_h >= TXT_SCREEN_H * large_font.h)
-        {
-            font = &large_font;
-            // Note that we deliberately do not update screen_image_{w,h}
-            // since these are the dimensions of textscreen image in screen
-            // coordinates, not pixels.
-        }
-    }
-
-    // Failed to initialize for high dpi (retina display) rendering? If so
-    // then use the normal resolution font instead.
-    if (font == &highdpi_font)
-    {
-        font = &normal_font;
-    }
 
     // Instead, we draw everything into an intermediate 8-bit surface
     // the same dimensions as the screen. SDL then takes care of all the
@@ -316,11 +156,14 @@ int TXT_Init(void)
                                         TXT_SCREEN_H * font->h,
                                         8, 0, 0, 0, 0);
 
-    screentex = vita2d_create_empty_texture_format(
-        TXT_SCREEN_W * font->w, TXT_SCREEN_H * font->h,
-        SCE_GXM_TEXTURE_FORMAT_A8B8G8R8
-    );
-    screentex_datap = vita2d_texture_get_datap(screentex);
+    if (!screentex)
+    {
+        screentex = vita2d_create_empty_texture_format(
+            TXT_SCREEN_W * font->w, TXT_SCREEN_H * font->h,
+            SCE_GXM_TEXTURE_FORMAT_A8B8G8R8
+        );
+        screentex_datap = vita2d_texture_get_datap(screentex);
+    }
 
     SDL_SetPaletteColors(screenbuffer->format->palette, ega_colors, 0, 16);
 
@@ -333,9 +176,11 @@ int TXT_Init(void)
     target_rect.w = screenbuffer->w;
     target_rect.h = screenbuffer->h;
 
-    vita2d_set_clear_color(RGBA8(0, 0, 0, 255));
+    if (!SDL_WasInit(SDL_INIT_JOYSTICK))
+    {
+        SDL_Init(SDL_INIT_JOYSTICK);
+    }
 
-    SDL_Init(SDL_INIT_JOYSTICK);
     joystick = SDL_JoystickOpen(0);
     SDL_JoystickEventState(SDL_ENABLE);
 
@@ -344,12 +189,13 @@ int TXT_Init(void)
 
 void TXT_Shutdown(void)
 {
+    vita2d_wait_rendering_done();
     free(screendata);
     screendata = NULL;
     SDL_FreeSurface(screenbuffer);
     screenbuffer = NULL;
     SDL_JoystickClose(joystick);
-    vita2d_free_texture(screentex);
+    joystick = NULL;
     // don't deinit SDL here, makes shit crash
 }
 
@@ -639,6 +485,7 @@ static int MouseHasMoved(void)
     }
 }
 
+// XXX: duplicate from i_video.c
 static void TranslateControllerEvent(SDL_Event *ev)
 {
     int btn;
