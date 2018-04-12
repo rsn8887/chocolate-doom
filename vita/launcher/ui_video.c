@@ -61,6 +61,12 @@ static struct Option video_opts[] =
         "vga_porch_flash", NULL,
         .boolean = 0,
     },
+    {
+        OPT_BOOLEAN,
+        "Graphical startup",
+        "graphical_startup", NULL,
+        .boolean = 1,
+    },
 };
 
 struct Menu ui_menu_video =
@@ -88,5 +94,6 @@ void UI_MenuVideo_Update(void)
 
 void UI_MenuVideo_Draw(void)
 {
-
+    self->numopts = 4 +
+        (ui_game == GAME_HERETIC_SW || ui_game == GAME_HERETIC);
 }
