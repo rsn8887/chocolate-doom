@@ -112,5 +112,5 @@ static void DoJoinAuto(int arg)
 
 static void DoHost(int arg)
 {
-    NetStart("server");
+    NetStart("privateserver");
 }

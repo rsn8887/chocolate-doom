@@ -148,7 +148,7 @@ static void WriteResponseFile(int game, const char *fname)
         else
         {
             fprintf(f, "-%s\n", g->netmode);
-            if (!strcmp(g->netmode, "server"))
+            if (!strcmp(g->netmode, "privateserver"))
             {
                 if (g->servername[0])
                     fprintf(f, "-servername %s\n", g->servername);
