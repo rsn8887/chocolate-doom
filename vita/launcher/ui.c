@@ -55,6 +55,90 @@ struct FileDialog
 static int ui_file_select = 0;
 static struct FileDialog ui_fd;
 
+static uint16_t ui_input_text[SCE_IME_DIALOG_MAX_TEXT_LENGTH + 1];
+static uint16_t ui_initial_text[SCE_IME_DIALOG_MAX_TEXT_LENGTH];
+static uint16_t ui_input_title[32] =
+{
+    'I', 'n', 'p', 'u', 't', ' ',
+    'v', 'a', 'l', 'u', 'e', 0
+};
+static char *ui_input_target;
+static int ui_input_target_sz;
+static int ui_keyboard = 0;
+
+// vita IME stuff
+
+static inline void ascii2utf(uint16_t *dst, char *src, int dstsize)
+{
+    if (!src || !dst) return;
+    while (*src && (dstsize-- > 0))
+        *(dst++) = *(src++);
+    *dst = 0x00;
+}
+
+static inline void utf2ascii(char *dst, uint16_t *src, int dstsize)
+{
+    if (!src || !dst) return;
+    while (*src && (dstsize-- > 0))
+        *(dst++) = (*(src++)) & 0xFF;
+    *dst = 0x00;
+}
+
+static int TouchKeyboardUpdate(void)
+{
+    static SceImeDialogResult result;
+    SceCommonDialogStatus status = sceImeDialogGetStatus();
+    if (status == 2)
+    {
+        memset(&result, 0, sizeof(SceImeDialogResult));
+        sceImeDialogGetResult(&result);
+        if (result.button == SCE_IME_DIALOG_BUTTON_ENTER)
+        {
+            ui_input_target[0] = 0;
+            utf2ascii(ui_input_target, ui_input_text, ui_input_target_sz);
+        }
+        sceImeDialogTerm();
+        ui_keyboard = 0;
+        return 0;
+    }
+    return 1;
+}
+
+static void TouchKeyboardOpen(const char *hint, char *out, int outlen)
+{
+    if (!out || !outlen) return;
+
+    int i = 0;
+    for (const char *c = hint; *c && i < 31; ++c, ++i)
+    {
+        ui_input_title[i] = *c;
+    }
+    ui_input_title[i] = 0;
+
+    if (out[0])
+    {
+        ascii2utf(ui_initial_text, out, SCE_IME_DIALOG_MAX_TEXT_LENGTH - 1);
+    }
+
+    ui_input_target = out;
+    ui_input_target_sz = outlen;
+
+    SceImeDialogParam param;
+    sceImeDialogParamInit(&param);
+    param.supportedLanguages = 0x0001FFFF;
+    param.languagesForced = SCE_TRUE;
+    param.type = SCE_IME_TYPE_BASIC_LATIN;
+    param.title = ui_input_title;
+    param.maxTextLength = outlen - 1;
+    param.initialText = ui_initial_text;
+    param.inputTextBuffer = ui_input_text;
+
+    ui_keyboard = 1;
+    sceImeDialogInit(&param);
+}
+
+// file dialog stuff
+
 static int FileDialogStart(const char *title, const char *dir, const char **exts, char *output)
 {
     if (ui_file_select) return 1;
@@ -185,7 +269,7 @@ static void OptActivate(struct Option *opt)
     }
     else if (opt->type == OPT_STRING)
     {
-        // TODO
+        TouchKeyboardOpen(opt->name, opt->string, MAX_STROPT);
     }
     else if (opt->type == OPT_FILE)
     {
@@ -518,6 +602,12 @@ int UI_Init(void)
 
 int UI_Update(void)
 {
+    if (ui_keyboard)
+    {
+        TouchKeyboardUpdate();
+        return 0;
+    }
+
     if (ui_file_select)
     {
         FileDialogUpdate();

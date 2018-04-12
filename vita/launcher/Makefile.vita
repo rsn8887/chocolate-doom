@@ -2,7 +2,7 @@ LIBS =\
 	-lvita2d -lvitashaders -lSceAppMgr_stub -lSceDisplay_stub -lSceGxm_stub \
 	-lSceSysmodule_stub -lSceTouch_stub -lSceCtrl_stub -lm \
 	-lScePgf_stub -ljpeg -lfreetype -lc \
-	-lSceCommonDialog_stub -lpng16 -lz
+	-lSceAppUtil_stub -lSceCommonDialog_stub -lpng16 -lz
 
 CFILES :=\
 main.c ui.c screen.c input.c configs.c files.c utils.c \
