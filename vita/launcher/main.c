@@ -5,6 +5,7 @@
 #include "ui.h"
 #include "files.h"
 #include "configs.h"
+#include "net.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -17,6 +18,7 @@ void I_Cleanup(void)
     if (init_level >= 5)
       CFG_SaveAll();
     R_Free();
+    NET_Free();
     IN_Free();
     UI_Free();
     FS_Free();
@@ -58,6 +60,8 @@ void I_Error(const char *error, ...)
 int main(void)
 {
     if (R_Init()) I_Error("R_Init(): failed");
+    init_level++;
+    if (NET_Init()) I_Error("NET_Init(): failed");
     init_level++;
     if (FS_Init()) I_Error("FS_Init(): %s", FS_Error());
     init_level++;

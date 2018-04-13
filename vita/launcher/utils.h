@@ -12,4 +12,5 @@ const char *fext(char *filename);
 char *strdup(const char *str);
 char *strparse(char *data, char *token);
 
+void I_Cleanup(void);
 void I_Error(const char *error, ...);

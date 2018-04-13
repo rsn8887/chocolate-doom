@@ -1,6 +1,7 @@
 #include "config.h"
 #include "utils.h"
 #include "files.h"
+#include "net.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -62,7 +63,7 @@ int FS_Init(void)
         fs_games[i].monsters[0] = '0';
         snprintf(fs_games[i].servername, MAX_FNAME, "Vita Server (%s)",
             fs_games[i].iwad);
-        strncpy(fs_games[i].joinaddr, "0.0.0.0:2342", MAX_FNAME);
+        snprintf(fs_games[i].joinaddr, MAX_FNAME, "%s:2342", net_my_ip);
         numgames += present;
     }
 
@@ -267,5 +268,6 @@ void FS_ExecGame(int game)
     argv[1] = rsp;
     argv[2] = NULL;
 
+    I_Cleanup();
     sceAppMgrLoadExec(exe, argv, NULL);
 }
