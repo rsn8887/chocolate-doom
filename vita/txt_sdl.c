@@ -69,6 +69,9 @@ static SDL_Renderer *renderer;
 static SDL_Rect target_rect;
 static SDL_Joystick *joystick;
 
+static float target_sx = 1.f;
+static float target_sy = 1.f;
+
 // Current input mode.
 static txt_input_mode_t input_mode = TXT_INPUT_NORMAL;
 
@@ -165,16 +168,20 @@ int TXT_Init(void)
         screentex_datap = vita2d_texture_get_datap(screentex);
     }
 
+    vita2d_texture_set_filters(screentex, SCE_GXM_TEXTURE_FILTER_LINEAR, SCE_GXM_TEXTURE_FILTER_LINEAR);
+
     SDL_SetPaletteColors(screenbuffer->format->palette, ega_colors, 0, 16);
 
     screendata = malloc(TXT_SCREEN_W * TXT_SCREEN_H * 2);
     memset(screendata, 0, TXT_SCREEN_W * TXT_SCREEN_H * 2);
 
-    // center the text screen
-    target_rect.x = VITA_SCR_W / 2 - screenbuffer->w / 2;
-    target_rect.y = VITA_SCR_H / 2 - screenbuffer->h / 2;
-    target_rect.w = screenbuffer->w;
-    target_rect.h = screenbuffer->h;
+    // center and scale the text screen
+    target_rect.h = VITA_SCR_H;
+    target_rect.w = (VITA_SCR_H * (float) screenbuffer->w) / (float) screenbuffer->h;
+    target_rect.y = 0;
+    target_rect.x = (VITA_SCR_W - target_rect.w) / 2;
+    target_sx = (float) target_rect.w / (float) screenbuffer->w;
+    target_sy = (float) target_rect.h / (float) screenbuffer->h;
 
     if (!SDL_WasInit(SDL_INIT_JOYSTICK))
     {
@@ -332,7 +339,7 @@ void TXT_UpdateScreenArea(int x, int y, int w, int h)
     vita2d_draw_texture_scale(
         screentex,
         target_rect.x, target_rect.y,
-        1.f, 1.f
+        target_sx, target_sy
     );
     vita2d_end_drawing();
     vita2d_swap_buffers();
